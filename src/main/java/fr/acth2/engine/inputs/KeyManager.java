@@ -26,7 +26,15 @@ public class KeyManager {
             }
         }
 
-        checkKey(GLFW_KEY_ENTER);
+        checkKey(GLFW_KEY_W);
+        checkKey(GLFW_KEY_A);
+        checkKey(GLFW_KEY_S);
+        checkKey(GLFW_KEY_D);
+
+        checkKey(GLFW_KEY_SPACE);
+        checkKey(GLFW_KEY_LEFT_SHIFT);
+
+        checkKey(GLFW_KEY_ESCAPE);
     }
 
     private static void checkKey(int keyCode) {

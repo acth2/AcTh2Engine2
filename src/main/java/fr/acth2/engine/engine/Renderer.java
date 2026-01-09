@@ -32,7 +32,7 @@ public class Renderer {
 
     public void init() {
         shaderProgram.createUniform("projectionMatrix");
-        shaderProgram.createUniform("worldMatrix");
+        shaderProgram.createUniform("modelViewMatrix");
         shaderProgram.createUniform("texture_sampler");
     }
 
@@ -40,7 +40,7 @@ public class Renderer {
 
         shaderProgram.bind();
 
-        // --- SET GLOBAL UNIFORMS FIRST ---
+        // --- SET GLOBAL UNIFORMS ---
         try (MemoryStack stack = MemoryStack.stackPush()) {
             IntBuffer width  = stack.mallocInt(1);
             IntBuffer height = stack.mallocInt(1);
@@ -58,18 +58,14 @@ public class Renderer {
             shaderProgram.setUniform("projectionMatrix", projectionMatrix);
         }
 
+        Matrix4f viewMatrix = transformation.getViewMatrix(getInstance().camera);
         shaderProgram.setUniform("texture_sampler", 0);
 
-        // --- DRAW OBJECTS ---
-        for (Item item : items) {
-            Matrix4f worldMatrix =
-                    transformation.getWorldMatrix(
-                            item.getPosition(),
-                            item.getRotation(),
-                            item.getScale());
+        for(Item gameItem : items) {
+            Matrix4f modelViewMatrix = transformation.getModelViewMatrix(gameItem, viewMatrix);
+            shaderProgram.setUniform("modelViewMatrix", modelViewMatrix);
 
-            shaderProgram.setUniform("worldMatrix", worldMatrix);
-            item.getMesh().render();
+            gameItem.getMesh().render();
         }
 
         shaderProgram.unbind();

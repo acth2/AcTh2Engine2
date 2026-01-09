@@ -3,12 +3,15 @@ package fr.acth2.engine;
 import de.matthiasmann.twl.utils.PNGDecoder;
 import fr.acth2.engine.engine.Renderer;
 import fr.acth2.engine.engine.ShaderProgram;
+import fr.acth2.engine.engine.camera.Camera;
 import fr.acth2.engine.engine.models.Item;
 import fr.acth2.engine.engine.models.Mesh;
 import fr.acth2.engine.inputs.KeyManager;
+import fr.acth2.engine.inputs.MouseInput;
 import fr.acth2.engine.utils.Refs;
 import fr.acth2.engine.utils.loader.Loader;
 import org.joml.Matrix4f;
+import org.joml.Vector2f;
 import org.lwjgl.glfw.GLFWErrorCallback;
 import org.lwjgl.opengl.GL;
 import org.lwjgl.system.MemoryStack;
@@ -32,6 +35,8 @@ import static org.lwjgl.system.MemoryUtil.*;
 public class Main implements Runnable {
     public long id;
     public int textureId;
+    public Camera camera;
+    public MouseInput mouseInput;
     float[] positions = {
             // Front
             -0.5f,  0.5f,  0.5f,
@@ -80,17 +85,6 @@ public class Main implements Runnable {
             20,21,22, 22,23,20
     };
 
-    float[] colours = new float[]{
-            0.5f, 0.0f, 0.0f,
-            0.0f, 0.5f, 0.0f,
-            0.0f, 0.0f, 0.5f,
-            0.0f, 0.5f, 0.5f,
-            0.5f, 0.0f, 0.0f,
-            0.0f, 0.5f, 0.0f,
-            0.0f, 0.0f, 0.5f,
-            0.0f, 0.5f, 0.5f,
-    };
-
     float[] texCoords = {
             0,0, 0,1, 1,1, 1,0,
             0,0, 0,1, 1,1, 1,0,
@@ -125,6 +119,8 @@ public class Main implements Runnable {
 
     public Main() {
         this.renderer = new Renderer();
+        this.camera = new Camera();
+        this.mouseInput = new MouseInput();
     }
 
     public static Main getInstance() {
@@ -154,6 +150,8 @@ public class Main implements Runnable {
 
         Main.getInstance().id = glfwCreateWindow(WINDOW_WIDTH, WINDOW_HEIGHT, WINDOW_TITLE, NULL, NULL);
         if ( getWindowID() == NULL ) throw new RuntimeException("Failed to create window");
+        this.mouseInput.init(getWindowID());
+
         glfwSetFramebufferSizeCallback(getWindowID(), (window, width, height) -> {
             glViewport(0, 0, width, height);
         });
@@ -228,7 +226,7 @@ public class Main implements Runnable {
 
         while (!glfwWindowShouldClose(getWindowID())) {
 
-            instance.inputs();
+            instance.inputs(instance.id, instance.mouseInput);
             instance.render();
 
             frames++;
@@ -281,7 +279,7 @@ public class Main implements Runnable {
         if ( rotation > 360 ) {
             rotation = 0;
         }
-        item.setRotation(rotation - 0.045F, 0.0F, 0.0F);
+        //item.setRotation(0.0F, 0.0F, 35.5F);
         item.setPosition(tempAmount, item.getPosition().y, -1F );
 
         renderer.render(item);
@@ -295,16 +293,40 @@ public class Main implements Runnable {
         glfwPollEvents();
     }
 
-    public void inputs() {
+    public void inputs(long window, MouseInput mouseInput) {
         KeyManager.update();
+        mouseInput.input(window);
 
-        if (KeyManager.getKeyJustPressed(GLFW_KEY_ENTER)) {
-            System.out.println("KEY ENTER JUST PRESSED!!!");
+        if (KeyManager.getKeyPress(GLFW_KEY_W)) {
+            camera.movePosition(0.0F, 0.0F, -0.05F);
         }
 
-        if (KeyManager.getKeyJustReleased(GLFW_KEY_ENTER)) {
-            System.out.println("KEY ENTER JUST RELEASED!!!");
+        if (KeyManager.getKeyPress(GLFW_KEY_A)) {
+            camera.movePosition(-0.05F, 0.0F, 0.0F);
         }
+
+        if (KeyManager.getKeyPress(GLFW_KEY_S)) {
+            camera.movePosition(0.0F, 0.0F, 0.05F);
+        }
+
+        if (KeyManager.getKeyPress(GLFW_KEY_D)) {
+            camera.movePosition(0.05F, 0.0F, 0.0F);
+        }
+
+        if (KeyManager.getKeyPress(GLFW_KEY_LEFT_SHIFT)) {
+            camera.movePosition(0.0F, -0.05F, 0.0F);
+        }
+
+        if (KeyManager.getKeyPress(GLFW_KEY_SPACE)) {
+            camera.movePosition(0.0F, 0.05F, 0.0F);
+        }
+
+        if (KeyManager.getKeyJustPressed(GLFW_KEY_ESCAPE)) {
+            System.exit(0);
+        }
+
+        Vector2f rotVec = mouseInput.getDisplVec();
+        camera.moveRotation(rotVec.x * MOUSE_SENSITIVITY, rotVec.y * MOUSE_SENSITIVITY, 0);
     }
 
     public void cleanUp() {
