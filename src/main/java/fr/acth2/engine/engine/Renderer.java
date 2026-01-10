@@ -1,22 +1,18 @@
 package fr.acth2.engine.engine;
 
-import de.matthiasmann.twl.utils.PNGDecoder;
 import fr.acth2.engine.Main;
 import fr.acth2.engine.engine.models.Item;
 import fr.acth2.engine.engine.models.Mesh;
 import fr.acth2.engine.engine.models.Transformation;
 import fr.acth2.engine.utils.Refs;
 import org.joml.Matrix4f;
-import org.lwjgl.openvr.Texture;
 import org.lwjgl.system.MemoryStack;
 
-import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
 
-import static org.lwjgl.glfw.GLFW.*;
+import static org.lwjgl.glfw.GLFW.glfwGetWindowSize;
 import static org.lwjgl.opengl.GL11.*;
-import static fr.acth2.engine.Main.*;
+import static fr.acth2.engine.Main.shaderProgram;
 
 public class Renderer {
 
@@ -42,7 +38,6 @@ public class Renderer {
 
         shaderProgram.bind();
 
-        // --- SET GLOBAL UNIFORMS ---
         try (MemoryStack stack = MemoryStack.stackPush()) {
             IntBuffer width  = stack.mallocInt(1);
             IntBuffer height = stack.mallocInt(1);
@@ -60,7 +55,7 @@ public class Renderer {
             shaderProgram.setUniform("projectionMatrix", projectionMatrix);
         }
 
-        Matrix4f viewMatrix = transformation.getViewMatrix(getInstance().camera);
+        Matrix4f viewMatrix = transformation.getViewMatrix(Main.getInstance().camera);
         shaderProgram.setUniform("texture_sampler", 0);
 
         for(Item gameItem : items) {
@@ -74,17 +69,5 @@ public class Renderer {
         }
 
         shaderProgram.unbind();
-    }
-
-    public static PNGDecoder loadTexture(String texture) {
-        try {
-            return new PNGDecoder(
-                    Texture.class.getResourceAsStream("/textures/" + texture));
-        } catch (IOException e) {
-            System.err.println("ERROR during loading of the texture: " + texture);
-            e.printStackTrace();
-            System.exit(1);
-        }
-        return null;
     }
 }

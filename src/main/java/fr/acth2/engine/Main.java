@@ -1,8 +1,8 @@
 package fr.acth2.engine;
 
-import de.matthiasmann.twl.utils.PNGDecoder;
 import fr.acth2.engine.engine.Renderer;
 import fr.acth2.engine.engine.ShaderProgram;
+import fr.acth2.engine.engine.Texture;
 import fr.acth2.engine.engine.camera.Camera;
 import fr.acth2.engine.engine.models.Item;
 import fr.acth2.engine.engine.models.Mesh;
@@ -15,19 +15,15 @@ import org.lwjgl.glfw.GLFWErrorCallback;
 import org.lwjgl.opengl.GL;
 import org.lwjgl.system.MemoryStack;
 
-import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
 
 import static fr.acth2.engine.utils.Refs.*;
 import static org.lwjgl.glfw.GLFW.*;
 import static org.lwjgl.opengl.GL11.*;
-import static org.lwjgl.opengl.GL30.glGenerateMipmap;
 import static org.lwjgl.system.MemoryUtil.NULL;
 
 public class Main implements Runnable {
     public long id;
-    public int textureId;
     public Camera camera;
     public MouseInput mouseInput;
 
@@ -99,31 +95,8 @@ public class Main implements Runnable {
 
         renderer.init();
         Mesh mesh = Loader.loadMesh("/models/test.obj");
+        mesh.attachTexture(new Texture("/textures/v2.png"));
         this.item = new Item(mesh);
-
-        PNGDecoder decoder = renderer.loadTexture("v2.png");
-        ByteBuffer buf = ByteBuffer.allocateDirect(
-                4 * decoder.getWidth() * decoder.getHeight());
-        try {
-            decoder.decode(buf, decoder.getWidth() * 4, PNGDecoder.Format.RGBA);
-        } catch (IOException e) {
-            System.err.println("ERROR during decoding of the texture: w" + decoder.getWidth() + ", h" + decoder.getHeight());
-            e.printStackTrace();
-            System.exit(1);
-        }
-        buf.flip();
-        int textureId = glGenTextures();
-        glBindTexture(GL_TEXTURE_2D, textureId);
-
-        glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, decoder.getWidth(),
-                decoder.getHeight(), 0, GL_RGBA, GL_UNSIGNED_BYTE, buf);
-        glGenerateMipmap(GL_TEXTURE_2D);
-        this.textureId = textureId;
 
         System.out.println("GLFW Window ID: " + getWindowID());
     }
@@ -190,9 +163,9 @@ public class Main implements Runnable {
         if (rotation > 360) {
             rotation = 0;
         }
-        //item.setPosition(tempAmount, item.getPosition().y, -2F);
+
+        item.setPosition(tempAmount, item.getPosition().y, -2F);
         item.setScale(12);
-        item.getMesh().setTextured(false);
 
         renderer.render(item);
         shaderProgram.setUniform("projectionMatrix", projectionMatrix);
@@ -242,6 +215,7 @@ public class Main implements Runnable {
         if (shaderProgram != null) {
             shaderProgram.cleanup();
         }
+        item.getMesh().cleanUp();
     }
 
     @Override
