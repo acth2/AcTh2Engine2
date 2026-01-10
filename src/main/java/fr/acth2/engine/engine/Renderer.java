@@ -42,7 +42,7 @@ public class Renderer {
         shaderProgram.createUniform("viewMatrix");
     }
 
-    public void render(Item[] items, Vector3f ambientLight, PointLight pointLight) {
+    public void render(Item[] items, Vector3f ambientLight, PointLight pointLight, DirectionalLight directionalLight) {
         shaderProgram.bind();
 
         try (MemoryStack stack = MemoryStack.stackPush()) {
@@ -62,9 +62,15 @@ public class Renderer {
         lightPos.mul(viewMatrix);
         currPointLight.setPosition(new Vector3f(lightPos.x, lightPos.y, lightPos.z));
 
+        DirectionalLight currDirLight = new DirectionalLight(directionalLight);
+        Vector4f dir = new Vector4f(currDirLight.getPosition(), 0);
+        dir.mul(viewMatrix);
+        currDirLight.setPosition(new Vector3f(dir.x, dir.y, dir.z));
+
         shaderProgram.setUniform("ambientLight", ambientLight);
         shaderProgram.setUniform("specularPower", 10f);
         shaderProgram.setUniform("pointLight", currPointLight);
+        shaderProgram.setUniform("directionalLight", currDirLight);
 
         shaderProgram.setUniform("texture_sampler", 0);
 

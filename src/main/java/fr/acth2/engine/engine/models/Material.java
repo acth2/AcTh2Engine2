@@ -11,16 +11,23 @@ public class Material {
     private Vector4f specularColor;
     private float reflectance;
     private Texture texture;
+    private boolean unlit;
 
     public Material() {
         this.ambientColor = DEFAULT_COLOR;
         this.diffuseColor = DEFAULT_COLOR;
         this.specularColor = DEFAULT_COLOR;
         this.reflectance = 0;
+        this.unlit = false;
     }
 
     public Material(Vector4f color, float reflectance) {
         this(color, color, color, reflectance);
+    }
+
+    public Material(Vector4f color, float reflectance, boolean unlit) {
+        this(color, color, color, reflectance);
+        this.unlit = unlit;
     }
 
     public Material(Vector4f ambientColor, Vector4f diffuseColor, Vector4f specularColor, float reflectance) {
@@ -72,5 +79,13 @@ public class Material {
 
     public boolean isTextured() {
         return this.texture != null;
+    }
+
+    public boolean isUnlit() {
+        return unlit;
+    }
+
+    public void setUnlit(boolean unlit) {
+        this.unlit = unlit;
     }
 }

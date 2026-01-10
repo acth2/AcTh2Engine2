@@ -35,6 +35,7 @@ struct Material
     vec4 specular;
     int hasTexture;
     float reflectance;
+    int unlit;
 };
 
 uniform sampler2D texture_sampler;
@@ -50,11 +51,9 @@ vec4 calcLightColor(vec3 light_color, float light_intensity, vec3 position, vec3
     vec4 diffuseColor = vec4(0, 0, 0, 0);
     vec4 specColor = vec4(0, 0, 0, 0);
 
-    // Diffuse Light
     float diffuseFactor = max(dot(normal, to_light_dir), 0.0);
     diffuseColor = material.diffuse * vec4(light_color, 1.0) * light_intensity * diffuseFactor;
 
-    // Specular Light
     vec3 camera_pos = -viewMatrix[3].xyz * mat3(viewMatrix);
     vec3 view_direction = normalize(camera_pos - position);
     vec3 halfway_direction = normalize(to_light_dir + view_direction);
@@ -73,7 +72,6 @@ vec4 calcPointLight(PointLight light, vec3 position, vec3 normal)
     vec3 light_direction = light.position - position;
     vec3 to_light_dir = normalize(light_direction);
 
-    // Attenuation
     float distance = length(light_direction);
     float attenuation = 1.0 / (light.att.constant + light.att.linear * distance + light.att.exponent * distance * distance);
 
@@ -82,13 +80,17 @@ vec4 calcPointLight(PointLight light, vec3 position, vec3 normal)
 
 vec4 calcDirectionalLight(DirectionalLight light, vec3 position, vec3 normal)
 {
-    // The direction to the light is the opposite of the light's direction vector
     vec3 to_light_dir = -light.direction;
     return calcLightColor(light.color, light.intensity, position, normalize(to_light_dir), normal);
 }
 
 void main()
 {
+    if (material.unlit == 1) {
+        fragColor = material.ambient;
+        return;
+    }
+
     vec4 baseColor;
     if ( material.hasTexture == 1 )
     {
@@ -102,11 +104,9 @@ void main()
     vec3 normal = normalize(mvVertexNormal);
     vec4 totalLight = vec4(ambientLight, 1.0) * material.ambient;
 
-    // Use point light
     totalLight += calcPointLight(pointLight, mvVertexPos, normal);
 
-    // Uncomment to use directional light
-    // totalLight += calcDirectionalLight(directionalLight, mvVertexPos, normal);
+    totalLight += calcDirectionalLight(directionalLight, mvVertexPos, normal);
 
     fragColor = baseColor * totalLight;
 }

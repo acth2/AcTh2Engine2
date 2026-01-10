@@ -11,6 +11,7 @@ import fr.acth2.engine.engine.models.Material;
 import fr.acth2.engine.engine.models.Mesh;
 import fr.acth2.engine.inputs.KeyManager;
 import fr.acth2.engine.inputs.MouseInput;
+import fr.acth2.engine.utils.Time;
 import fr.acth2.engine.utils.loader.Loader;
 import org.joml.Matrix4f;
 import org.joml.Vector2f;
@@ -113,20 +114,40 @@ public class Main implements Runnable {
         item.setPosition(0, 0, -2);
 
         Mesh lightMesh = Loader.loadMesh("/models/light.obj");
-        Material lightMaterial = new Material(new Vector4f(1f, 1f, 1f, 1.0f), 0f);
+        Material lightMaterial = new Material(new Vector4f(1f, 1f, 1f, 1.0f), 0f, true);
         lightMesh.setMaterial(lightMaterial);
         Item lightItem = new Item(lightMesh);
-
-        items = new Item[]{item, lightItem};
 
         ambientLight = new Vector3f(0.2f, 0.2f, 0.2f);
 
         Vector3f lightPosition = new Vector3f(-1, 0, 0);
         Vector3f lightColor = new Vector3f(1, 1, 1);
         pointLight = new PointLight(lightColor, lightPosition, 1.0f);
+        lightItem.setPosition(lightPosition.x, lightPosition.y, lightPosition.z);
+
+        Vector3f directionalLightColor = new Vector3f(1.0f, 1.0f, 0.8f);
+        Vector3f directionalLightDirection = new Vector3f(0, -1, -1);
+        directionalLight = new DirectionalLight(directionalLightColor, directionalLightDirection, 0.7f);
+
+        Mesh sunMesh = Loader.loadMesh("/models/sun.obj");
+        Material sunMaterial = new Material(new Vector4f(1f, 1f, 1f, 1.0f), 0f, true);
+        sunMesh.setMaterial(sunMaterial);
+        Item sunItem = new Item(sunMesh);
+        sunItem.setScale(0.1f);
+
+        items = new Item[]{item, lightItem, sunItem};
 
 
-        System.out.println("GLFW Window ID: " + getWindowID());
+        System.out.println("GLFW Window ID: " + getWindowID() + "\n");
+
+        System.out.println("Controls: ");
+        System.out.println(" - X = STOP TIME");
+        System.out.println(" - TAB        = FOCUS AND TAKE CAMERA");
+        System.out.println(" - CONTROLS   = BOOST");
+        System.out.println(" - SHIFT      = HEAD DOWN");
+        System.out.println(" - SPACE      = HEAD UP");
+        System.out.println(" - WASD       = MOVEMENT");
+        System.out.println(" - ESC        = EXIT");
     }
 
     private static void loop() {
@@ -183,15 +204,25 @@ public class Main implements Runnable {
         float deltaTime = (currentTime - lastTime) / 1000.0f;
         lastTime = currentTime;
 
-        temp += deltaTime;
+        if (!Time.isTimeStopped()) {
+            temp += deltaTime;
+        }
 
-        float lightX = (float)Math.sin(temp) * 2.0f;
-        float lightZ = (float)Math.cos(temp) * 2.0f - 2.0f;
-        pointLight.setPosition(new Vector3f(lightX, 0, lightZ));
-        items[1].setPosition(lightX, 0, lightZ);
+        float sunX = (float)Math.sin(temp) * 10.0f;
+        float sunZ = (float)Math.cos(temp) * 10.0f - 2.0f;
+        items[2].setPosition(sunX, 10.0f, sunZ);
+        
+        Vector3f sunDirection = new Vector3f(-sunX, -10.0f, -sunZ);
+        sunDirection.normalize();
+        directionalLight.setPosition(sunDirection);
+
+        float pointLightY = (float)Math.sin(temp / 2) * 2.0f;
+        float pointLightZ = (float)Math.cos(temp / 2) * 2.0f - 2.0f;
+        pointLight.setPosition(new Vector3f(0, pointLightY, pointLightZ));
+        items[1].setPosition(0, pointLightY, pointLightZ);
 
 
-        renderer.render(items, ambientLight, pointLight);
+        renderer.render(items, ambientLight, pointLight, directionalLight);
 
         shaderProgram.unbind();
         glfwSwapBuffers(getWindowID());
@@ -202,28 +233,38 @@ public class Main implements Runnable {
         KeyManager.update();
         mouseInput.input(window);
 
+        if (KeyManager.getKeyJustPressed(GLFW_KEY_X)) {
+            Time.stopTime();
+        }
+
+        float speed = 0.05f;
+
+        if (KeyManager.getKeyJustPressed(GLFW_KEY_LEFT_CONTROL)) {
+            speed = 15f;
+        }
+
         if (KeyManager.getKeyPress(GLFW_KEY_W)) {
-             camera.movePosition(0.0F, 0.0F, -0.05F);
+             camera.movePosition(0.0F, 0.0F, -speed);
         }
 
         if (KeyManager.getKeyPress(GLFW_KEY_A)) {
-             camera.movePosition(-0.05F, 0.0F, 0.0F);
+             camera.movePosition(-speed, 0.0F, 0.0F);
         }
 
         if (KeyManager.getKeyPress(GLFW_KEY_S)) {
-             camera.movePosition(0.0F, 0.0F, 0.05F);
+             camera.movePosition(0.0F, 0.0F, speed);
         }
 
         if (KeyManager.getKeyPress(GLFW_KEY_D)) {
-             camera.movePosition(0.05F, 0.0F, 0.0F);
+             camera.movePosition(speed, 0.0F, 0.0F);
         }
 
         if (KeyManager.getKeyPress(GLFW_KEY_LEFT_SHIFT)) {
-             camera.movePosition(0.0F, -0.05F, 0.0F);
+             camera.movePosition(0.0F, -speed, 0.0F);
         }
 
         if (KeyManager.getKeyPress(GLFW_KEY_SPACE)) {
-             camera.movePosition(0.0F, 0.05F, 0.0F);
+             camera.movePosition(0.0F, speed, 0.0F);
         }
 
         if (KeyManager.getKeyPress(GLFW_KEY_ESCAPE)) {

@@ -52,6 +52,7 @@ public class ShaderProgram {
         createUniform(uniformName + ".specular");
         createUniform(uniformName + ".hasTexture");
         createUniform(uniformName + ".reflectance");
+        createUniform(uniformName + ".unlit");
     }
 
     public void createDirectionalLightUniform(String uniformName) {
@@ -94,6 +95,7 @@ public class ShaderProgram {
         setUniform(uniformName + ".specular", material.getSpecularColor());
         setUniform(uniformName + ".hasTexture", material.isTextured() ? 1 : 0);
         setUniform(uniformName + ".reflectance", material.getReflectance());
+        setUniform(uniformName + ".unlit", material.isUnlit() ? 1 : 0);
     }
 
     public void setUniform(String uniformName, Vector4f value) {

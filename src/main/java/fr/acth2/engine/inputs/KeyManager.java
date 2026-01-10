@@ -34,8 +34,10 @@ public class KeyManager {
         checkKey(GLFW_KEY_SPACE);
         checkKey(GLFW_KEY_LEFT_SHIFT);
 
+        checkKey(GLFW_KEY_X);
         checkKey(GLFW_KEY_ESCAPE);
         checkKey(GLFW_KEY_TAB);
+        checkKey(GLFW_KEY_LEFT_CONTROL);
     }
 
     private static void checkKey(int keyCode) {
