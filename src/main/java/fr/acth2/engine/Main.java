@@ -8,92 +8,28 @@ import fr.acth2.engine.engine.models.Item;
 import fr.acth2.engine.engine.models.Mesh;
 import fr.acth2.engine.inputs.KeyManager;
 import fr.acth2.engine.inputs.MouseInput;
-import fr.acth2.engine.utils.Refs;
 import fr.acth2.engine.utils.loader.Loader;
 import org.joml.Matrix4f;
 import org.joml.Vector2f;
 import org.lwjgl.glfw.GLFWErrorCallback;
 import org.lwjgl.opengl.GL;
 import org.lwjgl.system.MemoryStack;
-import org.lwjgl.system.MemoryUtil;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
 
-import static org.lwjgl.glfw.GLFW.*;
 import static fr.acth2.engine.utils.Refs.*;
-import static org.lwjgl.opengl.ARBVertexArrayObject.*;
-import static org.lwjgl.opengl.GL11.glGenTextures;
-import static org.lwjgl.opengl.GL15C.*;
-import static org.lwjgl.opengl.GL20.glDisableVertexAttribArray;
-import static org.lwjgl.opengl.GL20.glVertexAttribPointer;
+import static org.lwjgl.glfw.GLFW.*;
+import static org.lwjgl.opengl.GL11.*;
 import static org.lwjgl.opengl.GL30.glGenerateMipmap;
-import static org.lwjgl.system.MemoryUtil.*;
+import static org.lwjgl.system.MemoryUtil.NULL;
 
 public class Main implements Runnable {
     public long id;
     public int textureId;
     public Camera camera;
     public MouseInput mouseInput;
-    float[] positions = {
-            // Front
-            -0.5f,  0.5f,  0.5f,
-            -0.5f, -0.5f,  0.5f,
-            0.5f, -0.5f,  0.5f,
-            0.5f,  0.5f,  0.5f,
-
-            // Back
-            0.5f,  0.5f, -0.5f,
-            0.5f, -0.5f, -0.5f,
-            -0.5f, -0.5f, -0.5f,
-            -0.5f,  0.5f, -0.5f,
-
-            // Left
-            -0.5f,  0.5f, -0.5f,
-            -0.5f, -0.5f, -0.5f,
-            -0.5f, -0.5f,  0.5f,
-            -0.5f,  0.5f,  0.5f,
-
-            // Right
-            0.5f,  0.5f,  0.5f,
-            0.5f, -0.5f,  0.5f,
-            0.5f, -0.5f, -0.5f,
-            0.5f,  0.5f, -0.5f,
-
-            // Top
-            -0.5f,  0.5f, -0.5f,
-            -0.5f,  0.5f,  0.5f,
-            0.5f,  0.5f,  0.5f,
-            0.5f,  0.5f, -0.5f,
-
-            // Bottom
-            -0.5f, -0.5f,  0.5f,
-            -0.5f, -0.5f, -0.5f,
-            0.5f, -0.5f, -0.5f,
-            0.5f, -0.5f,  0.5f
-    };
-
-
-    int[] indices = {
-            0,1,2, 2,3,0,
-            4,5,6, 6,7,4,
-            8,9,10, 10,11,8,
-            12,13,14, 14,15,12,
-            16,17,18, 18,19,16,
-            20,21,22, 22,23,20
-    };
-
-    float[] texCoords = {
-            0,0, 0,1, 1,1, 1,0,
-            0,0, 0,1, 1,1, 1,0,
-            0,0, 0,1, 1,1, 1,0,
-            0,0, 0,1, 1,1, 1,0,
-            0,0, 0,1, 1,1, 1,0,
-            0,0, 0,1, 1,1, 1,0
-    };
-
 
     private static final float FOV = PROJECTION_FOV;
     private static final float Z_NEAR = PROJECTION_Z_NEAR;
@@ -103,19 +39,8 @@ public class Main implements Runnable {
     private static Thread loopThread;
     private static Main main;
     private static Renderer renderer;
-    private static FloatBuffer verticesBuffer;
     public static ShaderProgram shaderProgram;
-    private static Mesh mesh;
     private static Item item;
-
-    public static int vaoId;
-    private static int vboId;
-
-    static float[] vertices = new float[]{
-            0.0f,  0.5f, 0.0f,
-            -0.5f, -0.5f, 0.0f,
-            0.5f, -0.5f, 0.0f
-    };
 
     public Main() {
         this.renderer = new Renderer();
@@ -131,15 +56,14 @@ public class Main implements Runnable {
         main = instance;
     }
 
-    public static void main(String[] args) throws Exception {
+    public static void main(String[] args) {
         Main.setInstance(new Main());
         Main.getInstance().start();
     }
 
     private void load() throws Exception {
-        GLFWErrorCallback errorCallback;
-        glfwSetErrorCallback(errorCallback = GLFWErrorCallback.createPrint(System.err));
-        if (glfwInit() != true) {
+        GLFWErrorCallback.createPrint(System.err).set();
+        if (!glfwInit()) {
             throw new IllegalStateException("Unable to initialize GLFW");
         }
         System.out.println("GLFW initialized");
@@ -149,7 +73,7 @@ public class Main implements Runnable {
         glfwWindowHint(GLFW_RESIZABLE, RESIZABLE ? GLFW_TRUE : GLFW_FALSE);
 
         Main.getInstance().id = glfwCreateWindow(WINDOW_WIDTH, WINDOW_HEIGHT, WINDOW_TITLE, NULL, NULL);
-        if ( getWindowID() == NULL ) throw new RuntimeException("Failed to create window");
+        if (getWindowID() == NULL) throw new RuntimeException("Failed to create window");
         this.mouseInput.init(getWindowID());
 
         glfwSetFramebufferSizeCallback(getWindowID(), (window, width, height) -> {
@@ -163,8 +87,8 @@ public class Main implements Runnable {
 
         glfwSwapInterval(1);
         glEnable(GL_DEPTH_TEST);
+        glDisable(GL_CULL_FACE);
         glfwShowWindow(getWindowID());
-        glfwSwapBuffers(getWindowID());
 
         glfwSetInputMode(getWindowID(), GLFW_CURSOR, GRABBED_CURSOR ? GLFW_CURSOR_DISABLED : GLFW_CURSOR_NORMAL);
 
@@ -174,7 +98,7 @@ public class Main implements Runnable {
         shaderProgram.link();
 
         renderer.init();
-        this.mesh = new Mesh(positions, texCoords, indices);
+        Mesh mesh = Loader.loadMesh("/models/test.obj");
         this.item = new Item(mesh);
 
         PNGDecoder decoder = renderer.loadTexture("v2.png");
@@ -199,21 +123,7 @@ public class Main implements Runnable {
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, decoder.getWidth(),
                 decoder.getHeight(), 0, GL_RGBA, GL_UNSIGNED_BYTE, buf);
         glGenerateMipmap(GL_TEXTURE_2D);
-
         this.textureId = textureId;
-
-
-        FloatBuffer verticesBuffer = MemoryUtil.memAllocFloat(vertices.length);
-        verticesBuffer.put(vertices).flip();
-
-        vaoId = glGenVertexArrays();
-        glBindVertexArray(vaoId);
-
-        vboId = glGenBuffers();
-        glBindBuffer(GL_ARRAY_BUFFER, vboId);
-        glBufferData(GL_ARRAY_BUFFER, verticesBuffer, GL_STATIC_DRAW);
-        memFree(verticesBuffer);
-        glVertexAttribPointer(0, 3, GL_FLOAT, false, 0, 0);
 
         System.out.println("GLFW Window ID: " + getWindowID());
     }
@@ -233,7 +143,7 @@ public class Main implements Runnable {
 
             double now = getTime();
             if (now - lastFpsTime >= 1000) {
-                glfwSetWindowTitle(getWindowID(),  WINDOW_TITLE + " | FPS: " + frames);
+                glfwSetWindowTitle(getWindowID(), WINDOW_TITLE + " | FPS: " + frames);
                 frames = 0;
                 lastFpsTime = now;
             }
@@ -248,6 +158,7 @@ public class Main implements Runnable {
     float temp = 0.0F;
     float tempAmount = 0.0f;
     long lastTime = System.currentTimeMillis();
+
     public void render() {
         renderer.clear();
 
@@ -273,20 +184,18 @@ public class Main implements Runnable {
         lastTime = currentTime;
 
         temp += deltaTime;
-        tempAmount = (float)Math.sin(temp);
+        tempAmount = (float) Math.sin(temp);
 
         float rotation = item.getRotation().x + 1.5f;
-        if ( rotation > 360 ) {
+        if (rotation > 360) {
             rotation = 0;
         }
-        //item.setRotation(0.0F, 0.0F, 35.5F);
-        item.setPosition(tempAmount, item.getPosition().y, -1F );
+        //item.setPosition(tempAmount, item.getPosition().y, -2F);
+        item.setScale(12);
+        item.getMesh().setTextured(false);
 
         renderer.render(item);
         shaderProgram.setUniform("projectionMatrix", projectionMatrix);
-
-        glDisableVertexAttribArray(0);
-        glBindVertexArray(0);
 
         shaderProgram.unbind();
         glfwSwapBuffers(getWindowID());
@@ -330,23 +239,8 @@ public class Main implements Runnable {
     }
 
     public void cleanUp() {
-        glBindBuffer(GL_ARRAY_BUFFER, 0);
-        glBindVertexArray(0);
-
         if (shaderProgram != null) {
             shaderProgram.cleanup();
-        }
-
-        glDisableVertexAttribArray(0);
-
-        glBindBuffer(GL_ARRAY_BUFFER, 0);
-        glDeleteBuffers(vboId);
-
-        glBindVertexArray(0);
-        glDeleteVertexArrays(vaoId);
-
-        if (verticesBuffer != null) {
-            MemoryUtil.memFree(verticesBuffer);
         }
     }
 
@@ -355,9 +249,18 @@ public class Main implements Runnable {
         try {
             load();
             loop();
-            cleanUp();
         } catch (Exception excp) {
             excp.printStackTrace();
+        } finally {
+            cleanUp();
         }
+    }
+
+    private static long getWindowID() {
+        return Main.getInstance().id;
+    }
+
+    private static double getTime() {
+        return System.currentTimeMillis();
     }
 }

@@ -3,6 +3,7 @@ package fr.acth2.engine.engine;
 import de.matthiasmann.twl.utils.PNGDecoder;
 import fr.acth2.engine.Main;
 import fr.acth2.engine.engine.models.Item;
+import fr.acth2.engine.engine.models.Mesh;
 import fr.acth2.engine.engine.models.Transformation;
 import fr.acth2.engine.utils.Refs;
 import org.joml.Matrix4f;
@@ -15,7 +16,6 @@ import java.nio.IntBuffer;
 
 import static org.lwjgl.glfw.GLFW.*;
 import static org.lwjgl.opengl.GL11.*;
-import static org.lwjgl.opengl.GL20.glEnableVertexAttribArray;
 import static fr.acth2.engine.Main.*;
 
 public class Renderer {
@@ -34,6 +34,8 @@ public class Renderer {
         shaderProgram.createUniform("projectionMatrix");
         shaderProgram.createUniform("modelViewMatrix");
         shaderProgram.createUniform("texture_sampler");
+        shaderProgram.createUniform("colour");
+        shaderProgram.createUniform("useColour");
     }
 
     public void render(Item... items) {
@@ -62,9 +64,12 @@ public class Renderer {
         shaderProgram.setUniform("texture_sampler", 0);
 
         for(Item gameItem : items) {
+            Mesh mesh = gameItem.getMesh();
             Matrix4f modelViewMatrix = transformation.getModelViewMatrix(gameItem, viewMatrix);
             shaderProgram.setUniform("modelViewMatrix", modelViewMatrix);
 
+            shaderProgram.setUniform("colour", mesh.getColour());
+            shaderProgram.setUniform("useColour", mesh.isTextured() ? 0 : 1);
             gameItem.getMesh().render();
         }
 
