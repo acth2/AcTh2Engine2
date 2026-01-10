@@ -1,6 +1,7 @@
 package fr.acth2.engine.engine;
 
 import fr.acth2.engine.Main;
+import fr.acth2.engine.engine.light.DirectionalLight;
 import fr.acth2.engine.engine.light.PointLight;
 import fr.acth2.engine.engine.models.Item;
 import fr.acth2.engine.engine.models.Mesh;
@@ -36,6 +37,7 @@ public class Renderer {
         shaderProgram.createMaterialUniform("material");
         shaderProgram.createUniform("specularPower");
         shaderProgram.createUniform("ambientLight");
+        shaderProgram.createDirectionalLightUniform("directionalLight");
         shaderProgram.createPointLightUniform("pointLight");
         shaderProgram.createUniform("viewMatrix");
     }
@@ -56,12 +58,9 @@ public class Renderer {
         shaderProgram.setUniform("viewMatrix", viewMatrix);
 
         PointLight currPointLight = new PointLight(pointLight);
-        Vector3f lightPos = currPointLight.getPosition();
-        Vector4f aux = new Vector4f(lightPos, 1);
-        aux.mul(viewMatrix);
-        lightPos.x = aux.x;
-        lightPos.y = aux.y;
-        lightPos.z = aux.z;
+        Vector4f lightPos = new Vector4f(currPointLight.getPosition(), 1);
+        lightPos.mul(viewMatrix);
+        currPointLight.setPosition(new Vector3f(lightPos.x, lightPos.y, lightPos.z));
 
         shaderProgram.setUniform("ambientLight", ambientLight);
         shaderProgram.setUniform("specularPower", 10f);

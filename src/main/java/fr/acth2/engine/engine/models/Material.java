@@ -1,4 +1,4 @@
-package fr.acth2.engine.engine.light;
+package fr.acth2.engine.engine.models;
 
 import fr.acth2.engine.engine.Texture;
 import org.joml.Vector4f;

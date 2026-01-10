@@ -35,6 +35,7 @@ public class KeyManager {
         checkKey(GLFW_KEY_LEFT_SHIFT);
 
         checkKey(GLFW_KEY_ESCAPE);
+        checkKey(GLFW_KEY_TAB);
     }
 
     private static void checkKey(int keyCode) {

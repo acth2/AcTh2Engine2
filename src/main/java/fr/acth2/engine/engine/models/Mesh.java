@@ -1,7 +1,6 @@
 package fr.acth2.engine.engine.models;
 
 import fr.acth2.engine.engine.Texture;
-import fr.acth2.engine.engine.light.Material;
 import org.lwjgl.system.MemoryUtil;
 
 import java.nio.FloatBuffer;

@@ -1,7 +1,8 @@
 package fr.acth2.engine.engine;
 
-import fr.acth2.engine.engine.light.Material;
+import fr.acth2.engine.engine.light.DirectionalLight;
 import fr.acth2.engine.engine.light.PointLight;
+import fr.acth2.engine.engine.models.Material;
 import org.joml.Matrix4f;
 import org.joml.Vector3f;
 import org.joml.Vector4f;
@@ -53,6 +54,18 @@ public class ShaderProgram {
         createUniform(uniformName + ".reflectance");
     }
 
+    public void createDirectionalLightUniform(String uniformName) {
+        createUniform(uniformName + ".color");
+        createUniform(uniformName + ".direction");
+        createUniform(uniformName + ".intensity");
+    }
+
+    public void setUniform(String uniformName, DirectionalLight dirLight) {
+        setUniform(uniformName + ".color", dirLight.getColor() );
+        setUniform(uniformName + ".direction", dirLight.getPosition());
+        setUniform(uniformName + ".intensity", dirLight.getIntensity());
+    }
+
     public void setUniform(String uniformName, Matrix4f value) {
         try (MemoryStack stack = MemoryStack.stackPush()) {
             FloatBuffer fb = stack.mallocFloat(16);
@@ -62,13 +75,17 @@ public class ShaderProgram {
     }
 
     public void setUniform(String uniformName, PointLight pointLight) {
-        setUniform(uniformName + ".color", pointLight.getColor());
-        setUniform(uniformName + ".position", pointLight.getPosition());
-        setUniform(uniformName + ".intensity", pointLight.getIntensity());
-        PointLight.Attenuation att = pointLight.getAttenuation();
-        setUniform(uniformName + ".att.constant", att.getConstant());
-        setUniform(uniformName + ".att.linear", att.getLinear());
-        setUniform(uniformName + ".att.exponent", att.getExponent());
+        if (pointLight != null) {
+            setUniform(uniformName + ".color", pointLight.getColor());
+            setUniform(uniformName + ".position", pointLight.getPosition());
+            setUniform(uniformName + ".intensity", pointLight.getIntensity());
+            PointLight.Attenuation att = pointLight.getAttenuation();
+            setUniform(uniformName + ".att.constant", att.getConstant());
+            setUniform(uniformName + ".att.linear", att.getLinear());
+            setUniform(uniformName + ".att.exponent", att.getExponent());
+        } else {
+            setUniform(uniformName + ".intensity", 0.0f);
+        }
     }
 
     public void setUniform(String uniformName, Material material) {

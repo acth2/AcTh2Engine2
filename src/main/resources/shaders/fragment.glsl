@@ -21,6 +21,13 @@ struct PointLight
     Attenuation att;
 };
 
+struct DirectionalLight
+{
+    vec3 color;
+    vec3 direction;
+    float intensity;
+};
+
 struct Material
 {
     vec4 ambient;
@@ -35,6 +42,7 @@ uniform Material material;
 uniform vec3 ambientLight;
 uniform float specularPower;
 uniform PointLight pointLight;
+uniform DirectionalLight directionalLight;
 uniform mat4 viewMatrix;
 
 vec4 calcLightColor(vec3 light_color, float light_intensity, vec3 position, vec3 to_light_dir, vec3 normal)
@@ -53,7 +61,6 @@ vec4 calcLightColor(vec3 light_color, float light_intensity, vec3 position, vec3
     float spec_angle = max(dot(normal, halfway_direction), 0.0);
     float specularFactor = pow(spec_angle, specularPower);
 
-    // Use reflectance to control shininess
     if (material.reflectance > 0) {
         specColor = material.specular * vec4(light_color, 1.0) * light_intensity * specularFactor * material.reflectance;
     }
@@ -65,13 +72,19 @@ vec4 calcPointLight(PointLight light, vec3 position, vec3 normal)
 {
     vec3 light_direction = light.position - position;
     vec3 to_light_dir = normalize(light_direction);
-    vec4 light_color = calcLightColor(light.color, light.intensity, position, to_light_dir, normal);
 
-    //Apply attenuation
+    // Attenuation
     float distance = length(light_direction);
     float attenuation = 1.0 / (light.att.constant + light.att.linear * distance + light.att.exponent * distance * distance);
 
-    return light_color * attenuation;
+    return calcLightColor(light.color, light.intensity * attenuation, position, to_light_dir, normal);
+}
+
+vec4 calcDirectionalLight(DirectionalLight light, vec3 position, vec3 normal)
+{
+    // The direction to the light is the opposite of the light's direction vector
+    vec3 to_light_dir = -light.direction;
+    return calcLightColor(light.color, light.intensity, position, normalize(to_light_dir), normal);
 }
 
 void main()
@@ -88,7 +101,12 @@ void main()
 
     vec3 normal = normalize(mvVertexNormal);
     vec4 totalLight = vec4(ambientLight, 1.0) * material.ambient;
+
+    // Use point light
     totalLight += calcPointLight(pointLight, mvVertexPos, normal);
+
+    // Uncomment to use directional light
+    // totalLight += calcDirectionalLight(directionalLight, mvVertexPos, normal);
 
     fragColor = baseColor * totalLight;
 }
