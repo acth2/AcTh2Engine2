@@ -4,6 +4,8 @@ import fr.acth2.engine.engine.Renderer;
 import fr.acth2.engine.engine.ShaderProgram;
 import fr.acth2.engine.engine.Texture;
 import fr.acth2.engine.engine.camera.Camera;
+import fr.acth2.engine.engine.light.Material;
+import fr.acth2.engine.engine.light.PointLight;
 import fr.acth2.engine.engine.models.Item;
 import fr.acth2.engine.engine.models.Mesh;
 import fr.acth2.engine.inputs.KeyManager;
@@ -11,6 +13,8 @@ import fr.acth2.engine.inputs.MouseInput;
 import fr.acth2.engine.utils.loader.Loader;
 import org.joml.Matrix4f;
 import org.joml.Vector2f;
+import org.joml.Vector3f;
+import org.joml.Vector4f;
 import org.lwjgl.glfw.GLFWErrorCallback;
 import org.lwjgl.opengl.GL;
 import org.lwjgl.system.MemoryStack;
@@ -36,7 +40,11 @@ public class Main implements Runnable {
     private static Main main;
     private static Renderer renderer;
     public static ShaderProgram shaderProgram;
-    private static Item item;
+    private static Item[] items;
+    private Vector3f ambientLight;
+    private PointLight pointLight;
+    private Item lightIndicator;
+
 
     public Main() {
         this.renderer = new Renderer();
@@ -85,7 +93,7 @@ public class Main implements Runnable {
         glEnable(GL_DEPTH_TEST);
         glDisable(GL_CULL_FACE);
         glfwShowWindow(getWindowID());
-
+        glfwFocusWindow(getWindowID());
         glfwSetInputMode(getWindowID(), GLFW_CURSOR, GRABBED_CURSOR ? GLFW_CURSOR_DISABLED : GLFW_CURSOR_NORMAL);
 
         shaderProgram = new ShaderProgram();
@@ -94,9 +102,31 @@ public class Main implements Runnable {
         shaderProgram.link();
 
         renderer.init();
-        Mesh mesh = Loader.loadMesh("/models/test.obj");
-        mesh.attachTexture(new Texture("/textures/v2.png"));
-        this.item = new Item(mesh);
+
+        float reflectance = 1f;
+        Mesh mesh = Loader.loadMesh("/models/cuboid.obj");
+        Material material = new Material(new Vector4f(1f, 1f, 1f, 1f), reflectance);
+        material.attachTexture(new Texture("/textures/v2.png"));
+        mesh.setMaterial(material);
+        Item item = new Item(mesh);
+        item.setPosition(0, 0, -2);
+        items = new Item[]{item};
+
+        ambientLight = new Vector3f(0.3f, 0.3f, 0.3f);
+        Vector3f lightColor = new Vector3f(1, 1, 1);
+        Vector3f lightPosition = new Vector3f(0, 1.5f, -2);
+        float lightIntensity = 1.0f;
+        pointLight = new PointLight(lightColor, lightPosition, lightIntensity);
+
+        Mesh lightIndicatorMesh = Loader.loadMesh("/models/light.obj");
+        Material lightIndicatorMaterial = new Material(new Vector4f(1f, 1f, 1f, 1f), 0.0F);
+        lightIndicatorMaterial.attachTexture(new Texture("/textures/v1.png"));
+        lightIndicatorMesh.setMaterial(lightIndicatorMaterial);
+        lightIndicator = new Item(lightIndicatorMesh);
+        lightIndicator.setPosition(pointLight.getPosition().x, pointLight.getPosition().y, pointLight.getPosition().z);
+
+        items = new Item[]{item, lightIndicator};
+
 
         System.out.println("GLFW Window ID: " + getWindowID());
     }
@@ -159,16 +189,11 @@ public class Main implements Runnable {
         temp += deltaTime;
         tempAmount = (float) Math.sin(temp);
 
-        float rotation = item.getRotation().x + 1.5f;
-        if (rotation > 360) {
-            rotation = 0;
-        }
+        items[0].setPosition(0, 0, -2);
+        pointLight.setPosition(new Vector3f(tempAmount * 2, 1.5f, -2));
+        lightIndicator.setPosition(pointLight.getPosition().x, pointLight.getPosition().y, pointLight.getPosition().z);
 
-        item.setPosition(tempAmount, item.getPosition().y, -2F);
-        item.setScale(12);
-
-        renderer.render(item);
-        shaderProgram.setUniform("projectionMatrix", projectionMatrix);
+        renderer.render(items, ambientLight, pointLight);
 
         shaderProgram.unbind();
         glfwSwapBuffers(getWindowID());
@@ -215,7 +240,9 @@ public class Main implements Runnable {
         if (shaderProgram != null) {
             shaderProgram.cleanup();
         }
-        item.getMesh().cleanUp();
+        for (Item item : items) {
+            item.getMesh().cleanUp();
+        }
     }
 
     @Override

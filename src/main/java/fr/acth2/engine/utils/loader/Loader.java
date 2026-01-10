@@ -83,7 +83,6 @@ public class Loader {
                     break;
                 case "f":
                     if (tokens.length > 4) {
-                        // Triangulate the polygon
                         for (int i = 2; i < tokens.length - 1; i++) {
                             faces.add(new Face(tokens[1], tokens[i], tokens[i + 1]));
                         }

@@ -7,11 +7,8 @@ import org.joml.Vector3f;
 public class Transformation {
 
     private final Matrix4f projectionMatrix;
-
     private final Matrix4f worldMatrix;
-
     private final Matrix4f viewMatrix;
-
     private final Matrix4f modelViewMatrix;
 
     public Transformation() {
@@ -44,14 +41,9 @@ public class Transformation {
         Vector3f rotation = camera.getRotation();
 
         viewMatrix.identity();
-        viewMatrix.rotateX((float) Math.toRadians(rotation.x))
-                .rotateY((float) Math.toRadians(rotation.y));
-
-        viewMatrix.translate(
-                -camera.getPosition().x,
-                -camera.getPosition().y,
-                -camera.getPosition().z
-        );
+        viewMatrix.rotate((float)Math.toRadians(rotation.x), new Vector3f(1, 0, 0))
+                  .rotate((float)Math.toRadians(rotation.y), new Vector3f(0, 1, 0));
+        viewMatrix.translate(-cameraPos.x, -cameraPos.y, -cameraPos.z);
         return viewMatrix;
     }
 }

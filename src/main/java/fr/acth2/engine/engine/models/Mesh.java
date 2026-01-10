@@ -1,7 +1,7 @@
 package fr.acth2.engine.engine.models;
 
 import fr.acth2.engine.engine.Texture;
-import org.joml.Vector3f;
+import fr.acth2.engine.engine.light.Material;
 import org.lwjgl.system.MemoryUtil;
 
 import java.nio.FloatBuffer;
@@ -24,8 +24,7 @@ public class Mesh {
     private final int normalsVboId;
     private final int idxVboId;
     private final int vertexCount;
-    private Vector3f colour = new Vector3f(0.0f, 0.0f, 0.0f);
-    private Texture texture;
+    private Material material;
 
     public Mesh(float[] positions, float[] texCoords, float[] normals, int[] indices) {
         FloatBuffer posBuffer = null;
@@ -34,6 +33,7 @@ public class Mesh {
         IntBuffer indicesBuffer = null;
         try {
             vertexCount = indices.length;
+            this.material = new Material();
 
             vaoId = glGenVertexArrays();
             glBindVertexArray(vaoId);
@@ -78,18 +78,21 @@ public class Mesh {
     }
 
     public void attachTexture(Texture texture) {
-        this.texture = texture;
+        if (this.material == null) {
+            this.material = new Material();
+        }
+        this.material.attachTexture(texture);
     }
 
     public void render() {
-        if (texture != null) {
+        if (material != null && material.isTextured()) {
             glActiveTexture(GL_TEXTURE0);
-            glBindTexture(GL_TEXTURE_2D, texture.getId());
+            glBindTexture(GL_TEXTURE_2D, material.getTexture().getId());
         }
 
         glBindVertexArray(vaoId);
         glEnableVertexAttribArray(0);
-        if (isTextured()) {
+        if (material != null && material.isTextured()) {
             glEnableVertexAttribArray(1);
         }
         glEnableVertexAttribArray(2);
@@ -97,7 +100,7 @@ public class Mesh {
         glDrawElements(GL_TRIANGLES, vertexCount, GL_UNSIGNED_INT, 0);
 
         glDisableVertexAttribArray(0);
-        if (isTextured()) {
+        if (material != null && material.isTextured()) {
             glDisableVertexAttribArray(1);
         }
         glDisableVertexAttribArray(2);
@@ -112,21 +115,27 @@ public class Mesh {
 
         glBindBuffer(GL_ARRAY_BUFFER, 0);
         glDeleteBuffers(posVboId);
-        if (isTextured()) {
+        if (material != null && material.isTextured()) {
             glDeleteBuffers(texVboId);
         }
         glDeleteBuffers(normalsVboId);
         glDeleteBuffers(idxVboId);
 
-        if (texture != null) {
-            texture.cleanup();
+        if (material != null && material.isTextured() && material.getTexture() != null) {
+            material.getTexture().cleanup();
         }
 
         glBindVertexArray(0);
         glDeleteVertexArrays(vaoId);
     }
 
+    public Material getMaterial() {
+        return material;
+    }
 
+    public void setMaterial(Material material) {
+        this.material = material;
+    }
 
     public int getVaoId() {
         return vaoId;
@@ -134,17 +143,5 @@ public class Mesh {
 
     public int getVertexCount() {
         return vertexCount;
-    }
-
-    public Vector3f getColour() {
-        return colour;
-    }
-
-    public boolean isTextured() {
-        return this.texture != null;
-    }
-
-    public void setColour(Vector3f colour) {
-        this.colour = colour;
     }
 }
