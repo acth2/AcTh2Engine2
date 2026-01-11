@@ -1,9 +1,11 @@
 package fr.acth2.engine.engine;
 
+import fr.acth2.engine.Main;
 import fr.acth2.engine.engine.light.DirectionalLight;
 import fr.acth2.engine.engine.light.PointLight;
 import fr.acth2.engine.engine.light.SpotLight;
 import fr.acth2.engine.engine.models.Material;
+import fr.acth2.engine.utils.loader.Loader;
 import org.joml.Matrix4f;
 import org.joml.Vector3f;
 import org.joml.Vector4f;
@@ -135,6 +137,18 @@ public class ShaderProgram {
         setUniform(uniformName + ".hasTexture", material.isTextured() ? 1 : 0);
         setUniform(uniformName + ".reflectance", material.getReflectance());
         setUniform(uniformName + ".unlit", material.isUnlit() ? 1 : 0);
+    }
+
+    private void setupHudShader() throws Exception {
+        ShaderProgram hudShaderProgram;
+
+        hudShaderProgram = new ShaderProgram();
+        hudShaderProgram.createVertexShader(Loader.loadResource("/shaders/hud_vertex.vs"));
+        hudShaderProgram.createFragmentShader(Loader.loadResource("/shaders/hud_fragment.fs"));
+        hudShaderProgram.link();
+
+        hudShaderProgram.createUniform("projModelMatrix");
+        hudShaderProgram.createUniform("colour");
     }
 
     public void setUniform(String uniformName, Vector4f value) {

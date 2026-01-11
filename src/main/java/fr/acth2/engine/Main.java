@@ -7,12 +7,13 @@ import fr.acth2.engine.engine.camera.Camera;
 import fr.acth2.engine.engine.light.DirectionalLight;
 import fr.acth2.engine.engine.light.PointLight;
 import fr.acth2.engine.engine.light.SpotLight;
-import fr.acth2.engine.engine.models.Item;
+import fr.acth2.engine.engine.models.items.Item;
 import fr.acth2.engine.engine.models.Material;
 import fr.acth2.engine.engine.models.Mesh;
 import fr.acth2.engine.inputs.KeyManager;
 import fr.acth2.engine.inputs.MouseInput;
 import fr.acth2.engine.utils.Time;
+import fr.acth2.engine.utils.hud.Hud;
 import fr.acth2.engine.utils.loader.Loader;
 import org.joml.Matrix4f;
 import org.joml.Vector2f;
@@ -20,9 +21,7 @@ import org.joml.Vector3f;
 import org.joml.Vector4f;
 import org.lwjgl.glfw.GLFWErrorCallback;
 import org.lwjgl.opengl.GL;
-import org.lwjgl.system.MemoryStack;
 
-import java.nio.IntBuffer;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -44,13 +43,15 @@ public class Main implements Runnable {
     private static Thread loopThread;
     private static Main main;
     private static Renderer renderer;
-    public static ShaderProgram shaderProgram;
-    private static Item[] items;
+    public ShaderProgram shaderProgram;
+    public ShaderProgram hudShaderProgram;
+    private Item[] items;
     private Vector3f ambientLight;
     private PointLight[] pointLights;
     private SpotLight[] spotLights;
     private DirectionalLight directionalLight;
     private Item spotLightItem;
+    public Hud hud;
 
 
     public Main() {
@@ -83,15 +84,16 @@ public class Main implements Runnable {
         glfwWindowHint(GLFW_VISIBLE, GLFW_TRUE);
         glfwWindowHint(GLFW_RESIZABLE, RESIZABLE ? GLFW_TRUE : GLFW_FALSE);
 
-        Main.getInstance().id = glfwCreateWindow(WINDOW_WIDTH, WINDOW_HEIGHT, WINDOW_TITLE, NULL, NULL);
-        if (getWindowID() == NULL) throw new RuntimeException("Failed to create window");
-        this.mouseInput.init(getWindowID());
+        this.id = glfwCreateWindow(WINDOW_WIDTH, WINDOW_HEIGHT, WINDOW_TITLE, NULL, NULL);
+        if (this.id == NULL) throw new RuntimeException("Failed to create window");
+        this.mouseInput.init(this.id);
 
-        glfwSetFramebufferSizeCallback(getWindowID(), (window, width, height) -> {
+        glfwSetFramebufferSizeCallback(this.id, (window, width, height) -> {
             glViewport(0, 0, width, height);
+            hud.updateSize(this.id);
         });
 
-        glfwMakeContextCurrent(getWindowID());
+        glfwMakeContextCurrent(this.id);
         GL.createCapabilities();
         if (DEBUG_BACKGROUND)
             glClearColor(0.2f, 0.3f, 0.4f, 1.0f);
@@ -100,16 +102,24 @@ public class Main implements Runnable {
         glEnable(GL_DEPTH_TEST);
         glEnable(GL_CULL_FACE);
         glCullFace(GL_BACK);
-        glfwShowWindow(getWindowID());
-        glfwFocusWindow(getWindowID());
-        glfwSetInputMode(getWindowID(), GLFW_CURSOR, GRABBED_CURSOR ? GLFW_CURSOR_DISABLED : GLFW_CURSOR_NORMAL);
+        glfwShowWindow(this.id);
+        glfwFocusWindow(this.id);
+        glfwSetInputMode(this.id, GLFW_CURSOR, GRABBED_CURSOR ? GLFW_CURSOR_DISABLED : GLFW_CURSOR_NORMAL);
+        
+        hud = new Hud();
+        hud.updateSize(this.id);
 
         shaderProgram = new ShaderProgram();
         shaderProgram.createVertexShader(Loader.loadResource("/shaders/vertex.glsl"));
         shaderProgram.createFragmentShader(Loader.loadResource("/shaders/fragment.glsl"));
         shaderProgram.link();
 
-        renderer.init();
+        hudShaderProgram = new ShaderProgram();
+        hudShaderProgram.createVertexShader(Loader.loadResource("/shaders/hud_vertex.glsl"));
+        hudShaderProgram.createFragmentShader(Loader.loadResource("/shaders/hud_fragment.glsl"));
+        hudShaderProgram.link();
+
+        renderer.init(shaderProgram, hudShaderProgram);
 
         List<Item> allItems = new ArrayList<>();
 
@@ -145,8 +155,7 @@ public class Main implements Runnable {
 
         items = allItems.toArray(new Item[0]);
 
-
-        System.out.println("GLFW Window ID: " + getWindowID() + "\n");
+        System.out.println("GLFW Window ID: " + this.id + "\n");
 
         System.out.println("Controls: ");
         System.out.println(" - X = STOP TIME");
@@ -156,6 +165,8 @@ public class Main implements Runnable {
         System.out.println(" - SPACE      = HEAD UP");
         System.out.println(" - WASD       = MOVEMENT");
         System.out.println(" - ESC        = EXIT");
+
+        hud.setPersistentText("tabTxt", "PRESS TAB TO TAKE THE CAMERA");
     }
 
     private static void loop() {
@@ -164,7 +175,7 @@ public class Main implements Runnable {
         double lastFpsTime = getTime();
         int frames = 0;
 
-        while (!glfwWindowShouldClose(getWindowID())) {
+        while (!glfwWindowShouldClose(instance.id)) {
 
             instance.inputs(instance.id, instance.mouseInput);
             instance.render();
@@ -173,7 +184,7 @@ public class Main implements Runnable {
 
             double now = getTime();
             if (now - lastFpsTime >= 1000) {
-                glfwSetWindowTitle(getWindowID(), WINDOW_TITLE + " | FPS: " + frames);
+                glfwSetWindowTitle(instance.id, WINDOW_TITLE + " | FPS: " + frames);
                 frames = 0;
                 lastFpsTime = now;
             }
@@ -181,7 +192,7 @@ public class Main implements Runnable {
     }
 
     public void start() {
-        loopThread = new Thread(Main.getInstance(), "GAME_LOOP_THREAD");
+        loopThread = new Thread(this, "GAME_LOOP_THREAD");
         loopThread.start();
     }
 
@@ -191,23 +202,6 @@ public class Main implements Runnable {
     public void render() {
         renderer.clear();
 
-        try (MemoryStack stack = MemoryStack.stackPush()) {
-            IntBuffer width = stack.mallocInt(1);
-            IntBuffer height = stack.mallocInt(1);
-
-            glfwGetWindowSize(getInstance().id, width, height);
-
-            int w = width.get(0);
-            int h = height.get(0);
-            float aspectRatio = (float) w / h;
-            projectionMatrix = new Matrix4f().perspective(FOV, aspectRatio,
-                    Z_NEAR, Z_FAR);
-        } catch (Exception e) {
-            float aspectRatio = (float) WINDOW_WIDTH / WINDOW_HEIGHT;
-            projectionMatrix = new Matrix4f().perspective(FOV, aspectRatio,
-                    Z_NEAR, Z_FAR);
-        }
-
         long currentTime = System.currentTimeMillis();
         float deltaTime = (currentTime - lastTime) / 1000.0f;
         lastTime = currentTime;
@@ -216,14 +210,16 @@ public class Main implements Runnable {
             temp += deltaTime;
         }
 
+        hud.update();
+
         float spotLightY = (float) (3.0f + (Math.sin(temp) * 2.0f));
         spotLights[0].getPointLight().setPosition(new Vector3f(0, spotLightY, 0));
         spotLightItem.setPosition(0, spotLightY, 0);
 
-        renderer.render(items, ambientLight, pointLights, spotLights, directionalLight);
+        renderer.render(this.id, this.camera, this.shaderProgram, items, ambientLight, pointLights, spotLights, directionalLight);
+        renderer.renderHud(this.id, this.hudShaderProgram, hud);
 
-        shaderProgram.unbind();
-        glfwSwapBuffers(getWindowID());
+        glfwSwapBuffers(this.id);
         glfwPollEvents();
     }
 
@@ -233,6 +229,7 @@ public class Main implements Runnable {
 
         if (KeyManager.getKeyJustPressed(GLFW_KEY_X)) {
             Time.stopTime();
+            hud.showInformation("TIME ALTERED", 1000);
         }
 
         float speed = 0.05f;
@@ -271,7 +268,13 @@ public class Main implements Runnable {
 
         if (KeyManager.getKeyJustPressed(GLFW_KEY_TAB)) {
             GRABBED_CURSOR = !GRABBED_CURSOR;
-            glfwSetInputMode(getWindowID(), GLFW_CURSOR, GRABBED_CURSOR ? GLFW_CURSOR_DISABLED : GLFW_CURSOR_NORMAL);
+            glfwSetInputMode(this.id, GLFW_CURSOR, GRABBED_CURSOR ? GLFW_CURSOR_DISABLED : GLFW_CURSOR_NORMAL);
+
+            if (GRABBED_CURSOR) {
+                hud.showInformation("CAMERA TAKEN", 1000);
+                hud.removePersistentText("tabTxt");
+            } else
+                hud.showInformation("CAMERA RELEASED", 1000);
         }
 
         if (GRABBED_CURSOR) {
@@ -283,6 +286,12 @@ public class Main implements Runnable {
     public void cleanUp() {
         if (shaderProgram != null) {
             shaderProgram.cleanup();
+        }
+        if (hudShaderProgram != null) {
+            hudShaderProgram.cleanup();
+        }
+        if (hud != null) {
+            hud.cleanUp();
         }
         for (Item item : items) {
             item.getMesh().cleanUp();
@@ -299,13 +308,5 @@ public class Main implements Runnable {
         } finally {
             cleanUp();
         }
-    }
-
-    private static long getWindowID() {
-        return Main.getInstance().id;
-    }
-
-    private static double getTime() {
-        return System.currentTimeMillis();
     }
 }

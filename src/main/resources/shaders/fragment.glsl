@@ -42,6 +42,7 @@ struct Material
     vec4 ambient;
     vec4 diffuse;
     vec4 specular;
+    vec4 colour;
     int hasTexture;
     float reflectance;
     int unlit;
@@ -110,7 +111,12 @@ vec4 calcDirectionalLight(DirectionalLight light, vec3 position, vec3 normal)
 void main()
 {
     if (material.unlit == 1) {
-        fragColor = material.ambient;
+        if (material.hasTexture == 1) {
+            vec4 texel = texture(texture_sampler, outTexCoord);
+            fragColor = vec4(material.colour.rgb, material.colour.a * texel.r);
+        } else {
+            fragColor = material.colour;
+        }
         return;
     }
 

@@ -8,11 +8,24 @@ import static org.lwjgl.opengl.GL30.glGenerateMipmap;
 
 public class Texture {
 
-    private final int id;
-    private final int width;
-    private final int height;
+    private int id;
+    private int width;
+    private int height;
 
-    public Texture(String fileName) throws Exception {
+    public Texture(ByteBuffer imageBuffer, int width, int height) {
+        this.width = width;
+        this.height = height;
+        this.id = glGenTextures();
+        glBindTexture(GL_TEXTURE_2D, this.id);
+        glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, imageBuffer);
+        glGenerateMipmap(GL_TEXTURE_2D);
+        glBindTexture(GL_TEXTURE_2D, 0);
+    }
+
+    public Texture(String fileName) {
         try (InputStream in = Texture.class.getResourceAsStream(fileName)) {
             if (in == null) {
                 throw new RuntimeException("Resource not found: " + fileName);
@@ -34,6 +47,9 @@ public class Texture {
             glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, buf);
             glGenerateMipmap(GL_TEXTURE_2D);
             glBindTexture(GL_TEXTURE_2D, 0);
+        } catch (Exception e) {
+            System.err.println("Error loading texture: " + fileName);
+            e.printStackTrace();
         }
     }
 

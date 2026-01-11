@@ -7,7 +7,7 @@ public class Refs {
 
     public static boolean RESIZABLE = true;
     public static boolean GRABBED_CURSOR = false;
-    public static boolean DEBUG_BACKGROUND = false;
+    public static boolean DEBUG_BACKGROUND = true;
 
     public static int WINDOW_WIDTH = 1280;
     public static int WINDOW_HEIGHT = 720;

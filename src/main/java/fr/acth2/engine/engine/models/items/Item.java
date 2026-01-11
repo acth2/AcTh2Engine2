@@ -1,12 +1,11 @@
-package fr.acth2.engine.engine.models;
+package fr.acth2.engine.engine.models.items;
 
+import fr.acth2.engine.engine.models.Mesh;
 import org.joml.Vector3f;
-
-import static org.lwjgl.opengl.GL30.*;
 
 public class Item {
 
-    private final Mesh mesh;
+    private Mesh mesh;
 
     private final Vector3f position;
 
@@ -16,6 +15,12 @@ public class Item {
 
     public Item(Mesh mesh) {
         this.mesh = mesh;
+        position = new Vector3f(0, 0, 0);
+        scale = 1;
+        rotation = new Vector3f(0, 0, 0);
+    }
+
+    public Item() {
         position = new Vector3f(0, 0, 0);
         scale = 1;
         rotation = new Vector3f(0, 0, 0);
@@ -51,5 +56,9 @@ public class Item {
 
     public Mesh getMesh() {
         return mesh;
+    }
+
+    public void setMesh(Mesh mesh) {
+        this.mesh = mesh;
     }
 }

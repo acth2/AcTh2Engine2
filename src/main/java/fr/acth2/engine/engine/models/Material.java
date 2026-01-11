@@ -69,6 +69,12 @@ public class Material {
         this.specularColor = specularColor;
     }
 
+    public void setColour(Vector4f colour) {
+        this.ambientColor = colour;
+        this.diffuseColor = colour;
+        this.specularColor = colour;
+    }
+
     public float getReflectance() {
         return reflectance;
     }

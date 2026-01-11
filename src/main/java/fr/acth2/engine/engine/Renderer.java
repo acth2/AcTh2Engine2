@@ -1,12 +1,13 @@
 package fr.acth2.engine.engine;
 
-import fr.acth2.engine.Main;
+import fr.acth2.engine.engine.camera.Camera;
 import fr.acth2.engine.engine.light.DirectionalLight;
 import fr.acth2.engine.engine.light.PointLight;
 import fr.acth2.engine.engine.light.SpotLight;
-import fr.acth2.engine.engine.models.Item;
+import fr.acth2.engine.engine.models.items.Item;
 import fr.acth2.engine.engine.models.Mesh;
 import fr.acth2.engine.engine.models.Transformation;
+import fr.acth2.engine.utils.hud.IHud;
 import fr.acth2.engine.utils.Refs;
 import org.joml.Matrix4f;
 import org.joml.Vector3f;
@@ -17,7 +18,6 @@ import java.nio.IntBuffer;
 
 import static org.lwjgl.glfw.GLFW.glfwGetWindowSize;
 import static org.lwjgl.opengl.GL11.*;
-import static fr.acth2.engine.Main.shaderProgram;
 
 public class Renderer {
 
@@ -33,7 +33,7 @@ public class Renderer {
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     }
 
-    public void init() {
+    public void init(ShaderProgram shaderProgram, ShaderProgram hudShaderProgram) {
         shaderProgram.createUniform("projectionMatrix");
         shaderProgram.createUniform("modelViewMatrix");
         shaderProgram.createUniform("texture_sampler");
@@ -45,21 +45,25 @@ public class Renderer {
         shaderProgram.createSpotLightListUniform("spotLights", MAX_SPOT_LIGHTS);
         shaderProgram.createUniform("pointLightCount");
         shaderProgram.createUniform("spotLightCount");
+
+        hudShaderProgram.createUniform("projModelMatrix");
+        hudShaderProgram.createUniform("colour");
+        hudShaderProgram.createUniform("texture_sampler");
     }
 
-    public void render(Item[] items, Vector3f ambientLight, PointLight[] pointLights, SpotLight[] spotLights, DirectionalLight directionalLight) {
+    public void render(long windowId, Camera camera, ShaderProgram shaderProgram, Item[] items, Vector3f ambientLight, PointLight[] pointLights, SpotLight[] spotLights, DirectionalLight directionalLight) {
         shaderProgram.bind();
 
         try (MemoryStack stack = MemoryStack.stackPush()) {
             IntBuffer width = stack.mallocInt(1);
             IntBuffer height = stack.mallocInt(1);
-            glfwGetWindowSize(Main.getInstance().id, width, height);
+            glfwGetWindowSize(windowId, width, height);
             Matrix4f projectionMatrix = transformation.getProjectionMatrix(
                     Refs.PROJECTION_FOV, width.get(0), height.get(0), Refs.PROJECTION_Z_NEAR, Refs.PROJECTION_Z_FAR);
             shaderProgram.setUniform("projectionMatrix", projectionMatrix);
         }
 
-        Matrix4f viewMatrix = transformation.getViewMatrix(Main.getInstance().camera);
+        Matrix4f viewMatrix = transformation.getViewMatrix(camera);
 
         int numLights = pointLights != null ? pointLights.length : 0;
         PointLight[] viewPointLights = new PointLight[numLights];
@@ -112,5 +116,31 @@ public class Renderer {
         }
 
         shaderProgram.unbind();
+    }
+
+    public void renderHud(long windowId, ShaderProgram hudShaderProgram, IHud hud) {
+        hudShaderProgram.bind();
+        
+        glEnable(GL_BLEND);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+        try (MemoryStack stack = MemoryStack.stackPush()) {
+            IntBuffer width = stack.mallocInt(1);
+            IntBuffer height = stack.mallocInt(1);
+            glfwGetWindowSize(windowId, width, height);
+            Matrix4f ortho = transformation.getOrthoMatrix(0, width.get(0), height.get(0), 0, -1, 1);
+
+            for (Item gameItem : hud.getItems()) {
+                Mesh mesh = gameItem.getMesh();
+                Matrix4f projModelMatrix = transformation.buildOrthoProjModelMatrix(gameItem, ortho);
+                hudShaderProgram.setUniform("projModelMatrix", projModelMatrix);
+                hudShaderProgram.setUniform("colour", gameItem.getMesh().getMaterial().getAmbientColor());
+                hudShaderProgram.setUniform("texture_sampler", 0);
+                mesh.render();
+            }
+        }
+
+        glDisable(GL_BLEND);
+        hudShaderProgram.unbind();
     }
 }

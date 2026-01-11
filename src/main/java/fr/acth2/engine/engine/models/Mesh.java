@@ -107,7 +107,7 @@ public class Mesh {
         glBindTexture(GL_TEXTURE_2D, 0);
     }
 
-    public void cleanUp() {
+    public void deleteBuffers() {
         glDisableVertexAttribArray(0);
         glDisableVertexAttribArray(1);
         glDisableVertexAttribArray(2);
@@ -120,12 +120,15 @@ public class Mesh {
         glDeleteBuffers(normalsVboId);
         glDeleteBuffers(idxVboId);
 
+        glBindVertexArray(0);
+        glDeleteVertexArrays(vaoId);
+    }
+
+    public void cleanUp() {
         if (material != null && material.isTextured() && material.getTexture() != null) {
             material.getTexture().cleanup();
         }
-
-        glBindVertexArray(0);
-        glDeleteVertexArrays(vaoId);
+        deleteBuffers();
     }
 
     public Material getMaterial() {
