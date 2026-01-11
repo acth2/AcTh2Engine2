@@ -6,6 +6,9 @@ in vec2 outTexCoord;
 
 out vec4 fragColor;
 
+const int MAX_POINT_LIGHTS = 5;
+const int MAX_SPOT_LIGHTS = 5;
+
 struct Attenuation
 {
     float constant;
@@ -19,6 +22,12 @@ struct PointLight
     vec3 position;
     float intensity;
     Attenuation att;
+};
+
+struct SpotLight {
+    PointLight pl;
+    vec3 coneDirection;
+    float cutOff;
 };
 
 struct DirectionalLight
@@ -42,9 +51,11 @@ uniform sampler2D texture_sampler;
 uniform Material material;
 uniform vec3 ambientLight;
 uniform float specularPower;
-uniform PointLight pointLight;
+uniform int pointLightCount;
+uniform int spotLightCount;
+uniform PointLight pointLights[MAX_POINT_LIGHTS];
+uniform SpotLight spotLights[MAX_SPOT_LIGHTS];
 uniform DirectionalLight directionalLight;
-uniform mat4 viewMatrix;
 
 vec4 calcLightColor(vec3 light_color, float light_intensity, vec3 position, vec3 to_light_dir, vec3 normal)
 {
@@ -54,8 +65,7 @@ vec4 calcLightColor(vec3 light_color, float light_intensity, vec3 position, vec3
     float diffuseFactor = max(dot(normal, to_light_dir), 0.0);
     diffuseColor = material.diffuse * vec4(light_color, 1.0) * light_intensity * diffuseFactor;
 
-    vec3 camera_pos = -viewMatrix[3].xyz * mat3(viewMatrix);
-    vec3 view_direction = normalize(camera_pos - position);
+    vec3 view_direction = normalize(-position);
     vec3 halfway_direction = normalize(to_light_dir + view_direction);
     float spec_angle = max(dot(normal, halfway_direction), 0.0);
     float specularFactor = pow(spec_angle, specularPower);
@@ -76,6 +86,19 @@ vec4 calcPointLight(PointLight light, vec3 position, vec3 normal)
     float attenuation = 1.0 / (light.att.constant + light.att.linear * distance + light.att.exponent * distance * distance);
 
     return calcLightColor(light.color, light.intensity * attenuation, position, to_light_dir, normal);
+}
+
+vec4 calcSpotLight(SpotLight light, vec3 position, vec3 normal)
+{
+    vec3 light_direction = light.pl.position - position;
+    vec3 to_light_dir = normalize(light_direction);
+    float spot_factor = dot(to_light_dir, -light.coneDirection);
+
+    vec4 light_color = vec4(0,0,0,0);
+    if (spot_factor > light.cutOff) {
+        light_color = calcPointLight(light.pl, position, normal);
+    }
+    return light_color;
 }
 
 vec4 calcDirectionalLight(DirectionalLight light, vec3 position, vec3 normal)
@@ -104,7 +127,13 @@ void main()
     vec3 normal = normalize(mvVertexNormal);
     vec4 totalLight = vec4(ambientLight, 1.0) * material.ambient;
 
-    totalLight += calcPointLight(pointLight, mvVertexPos, normal);
+    for (int i = 0; i < pointLightCount; i++) {
+        totalLight += calcPointLight(pointLights[i], mvVertexPos, normal);
+    }
+
+    for (int i = 0; i < spotLightCount; i++) {
+        totalLight += calcSpotLight(spotLights[i], mvVertexPos, normal);
+    }
 
     totalLight += calcDirectionalLight(directionalLight, mvVertexPos, normal);
 

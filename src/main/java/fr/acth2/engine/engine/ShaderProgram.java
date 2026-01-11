@@ -2,6 +2,7 @@ package fr.acth2.engine.engine;
 
 import fr.acth2.engine.engine.light.DirectionalLight;
 import fr.acth2.engine.engine.light.PointLight;
+import fr.acth2.engine.engine.light.SpotLight;
 import fr.acth2.engine.engine.models.Material;
 import org.joml.Matrix4f;
 import org.joml.Vector3f;
@@ -37,6 +38,12 @@ public class ShaderProgram {
         uniforms.put(uniformName, uniformLocation);
     }
 
+    public void createPointLightListUniform(String uniformName, int size) {
+        for (int i = 0; i < size; i++) {
+            createPointLightUniform(uniformName + "[" + i + "]");
+        }
+    }
+
     public void createPointLightUniform(String uniformName) {
         createUniform(uniformName + ".color");
         createUniform(uniformName + ".position");
@@ -44,6 +51,18 @@ public class ShaderProgram {
         createUniform(uniformName + ".att.constant");
         createUniform(uniformName + ".att.linear");
         createUniform(uniformName + ".att.exponent");
+    }
+
+    public void createSpotLightListUniform(String uniformName, int size) {
+        for (int i = 0; i < size; i++) {
+            createSpotLightUniform(uniformName + "[" + i + "]");
+        }
+    }
+
+    public void createSpotLightUniform(String uniformName) {
+        createPointLightUniform(uniformName + ".pl");
+        createUniform(uniformName + ".coneDirection");
+        createUniform(uniformName + ".cutOff");
     }
 
     public void createMaterialUniform(String uniformName) {
@@ -75,6 +94,13 @@ public class ShaderProgram {
         }
     }
 
+    public void setUniform(String uniformName, PointLight[] pointLights) {
+        int numLights = pointLights != null ? pointLights.length : 0;
+        for (int i = 0; i < numLights; i++) {
+            setUniform(uniformName + "[" + i + "]", pointLights[i]);
+        }
+    }
+
     public void setUniform(String uniformName, PointLight pointLight) {
         if (pointLight != null) {
             setUniform(uniformName + ".color", pointLight.getColor());
@@ -87,6 +113,19 @@ public class ShaderProgram {
         } else {
             setUniform(uniformName + ".intensity", 0.0f);
         }
+    }
+
+    public void setUniform(String uniformName, SpotLight[] spotLights) {
+        int numLights = spotLights != null ? spotLights.length : 0;
+        for (int i = 0; i < numLights; i++) {
+            setUniform(uniformName + "[" + i + "]", spotLights[i]);
+        }
+    }
+
+    public void setUniform(String uniformName, SpotLight spotLight) {
+        setUniform(uniformName + ".pl", spotLight.getPointLight());
+        setUniform(uniformName + ".coneDirection", spotLight.getConeDirection());
+        setUniform(uniformName + ".cutOff", spotLight.getCutOff());
     }
 
     public void setUniform(String uniformName, Material material) {

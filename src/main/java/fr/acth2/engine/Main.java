@@ -6,6 +6,7 @@ import fr.acth2.engine.engine.Texture;
 import fr.acth2.engine.engine.camera.Camera;
 import fr.acth2.engine.engine.light.DirectionalLight;
 import fr.acth2.engine.engine.light.PointLight;
+import fr.acth2.engine.engine.light.SpotLight;
 import fr.acth2.engine.engine.models.Item;
 import fr.acth2.engine.engine.models.Material;
 import fr.acth2.engine.engine.models.Mesh;
@@ -22,6 +23,8 @@ import org.lwjgl.opengl.GL;
 import org.lwjgl.system.MemoryStack;
 
 import java.nio.IntBuffer;
+import java.util.ArrayList;
+import java.util.List;
 
 import static fr.acth2.engine.utils.Refs.*;
 import static org.lwjgl.glfw.GLFW.*;
@@ -44,8 +47,10 @@ public class Main implements Runnable {
     public static ShaderProgram shaderProgram;
     private static Item[] items;
     private Vector3f ambientLight;
-    private PointLight pointLight;
+    private PointLight[] pointLights;
+    private SpotLight[] spotLights;
     private DirectionalLight directionalLight;
+    private Item spotLightItem;
 
 
     public Main() {
@@ -93,7 +98,8 @@ public class Main implements Runnable {
 
         glfwSwapInterval(1);
         glEnable(GL_DEPTH_TEST);
-        glDisable(GL_CULL_FACE);
+        glEnable(GL_CULL_FACE);
+        glCullFace(GL_BACK);
         glfwShowWindow(getWindowID());
         glfwFocusWindow(getWindowID());
         glfwSetInputMode(getWindowID(), GLFW_CURSOR, GRABBED_CURSOR ? GLFW_CURSOR_DISABLED : GLFW_CURSOR_NORMAL);
@@ -105,37 +111,39 @@ public class Main implements Runnable {
 
         renderer.init();
 
+        List<Item> allItems = new ArrayList<>();
+
         float reflectance = 1f;
-        Mesh mesh = Loader.loadMesh("/models/cuboid.obj");
-        Material material = new Material(new Vector4f(1.0f, 1.0f, 1.0f, 1.0f), reflectance);
-        mesh.setMaterial(material);
-        mesh.attachTexture(new Texture("/textures/v2.png"));
-        Item item = new Item(mesh);
-        item.setPosition(0, 0, -2);
+        Mesh cubeMesh = Loader.loadMesh("/models/cuboid.obj");
+        Material cubeMaterial = new Material(new Vector4f(1.0f, 1.0f, 1.0f, 1.0f), reflectance);
+        cubeMesh.setMaterial(cubeMaterial);
+        cubeMesh.attachTexture(new Texture("/textures/v2.png"));
 
-        Mesh lightMesh = Loader.loadMesh("/models/light.obj");
-        Material lightMaterial = new Material(new Vector4f(1f, 1f, 1f, 1.0f), 0f, true);
-        lightMesh.setMaterial(lightMaterial);
-        Item lightItem = new Item(lightMesh);
+        for (int i = -1; i <= 1; i++) {
+            for (int j = -1; j <= 1; j++) {
+                Item cubeItem = new Item(cubeMesh);
+                cubeItem.setPosition(i * 2, 0, j * 2 - 2);
+                allItems.add(cubeItem);
+            }
+        }
 
-        ambientLight = new Vector3f(0.2f, 0.2f, 0.2f);
+        ambientLight = new Vector3f(0.1f, 0.1f, 0.1f);
 
-        Vector3f lightPosition = new Vector3f(-1, 0, 0);
-        Vector3f lightColor = new Vector3f(1, 1, 1);
-        pointLight = new PointLight(lightColor, lightPosition, 1.0f);
-        lightItem.setPosition(lightPosition.x, lightPosition.y, lightPosition.z);
+        pointLights = new PointLight[0];
 
-        Vector3f directionalLightColor = new Vector3f(1.0f, 1.0f, 0.8f);
-        Vector3f directionalLightDirection = new Vector3f(0, -1, -1);
-        directionalLight = new DirectionalLight(directionalLightColor, directionalLightDirection, 0.7f);
+        spotLights = new SpotLight[1];
+        Mesh spotLightMesh = Loader.loadMesh("/models/light.obj");
+        Material spotLightMaterial = new Material(new Vector4f(1f, 1f, 1f, 1.0f), 0f, true);
+        spotLightMesh.setMaterial(spotLightMaterial);
+        spotLightItem = new Item(spotLightMesh);
+        spotLightItem.setScale(1f);
+        allItems.add(spotLightItem);
+        PointLight spotPointLight = new PointLight(new Vector3f(1,1,1), new Vector3f(0,5,0), 1.0f);
+        spotLights[0] = new SpotLight(spotPointLight, new Vector3f(0,-1,0), (float)Math.cos(Math.toRadians(30)));
 
-        Mesh sunMesh = Loader.loadMesh("/models/sun.obj");
-        Material sunMaterial = new Material(new Vector4f(1f, 1f, 1f, 1.0f), 0f, true);
-        sunMesh.setMaterial(sunMaterial);
-        Item sunItem = new Item(sunMesh);
-        sunItem.setScale(0.1f);
+        directionalLight = new DirectionalLight(new Vector3f(0,0,0), new Vector3f(0,0,0), 0);
 
-        items = new Item[]{item, lightItem, sunItem};
+        items = allItems.toArray(new Item[0]);
 
 
         System.out.println("GLFW Window ID: " + getWindowID() + "\n");
@@ -208,21 +216,11 @@ public class Main implements Runnable {
             temp += deltaTime;
         }
 
-        float sunX = (float)Math.sin(temp) * 10.0f;
-        float sunZ = (float)Math.cos(temp) * 10.0f - 2.0f;
-        items[2].setPosition(sunX, 10.0f, sunZ);
-        
-        Vector3f sunDirection = new Vector3f(-sunX, -10.0f, -sunZ);
-        sunDirection.normalize();
-        directionalLight.setPosition(sunDirection);
+        float spotLightY = (float) (3.0f + (Math.sin(temp) * 2.0f));
+        spotLights[0].getPointLight().setPosition(new Vector3f(0, spotLightY, 0));
+        spotLightItem.setPosition(0, spotLightY, 0);
 
-        float pointLightY = (float)Math.sin(temp / 2) * 2.0f;
-        float pointLightZ = (float)Math.cos(temp / 2) * 2.0f - 2.0f;
-        pointLight.setPosition(new Vector3f(0, pointLightY, pointLightZ));
-        items[1].setPosition(0, pointLightY, pointLightZ);
-
-
-        renderer.render(items, ambientLight, pointLight, directionalLight);
+        renderer.render(items, ambientLight, pointLights, spotLights, directionalLight);
 
         shaderProgram.unbind();
         glfwSwapBuffers(getWindowID());
