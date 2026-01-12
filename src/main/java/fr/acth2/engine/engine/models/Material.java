@@ -12,6 +12,7 @@ public class Material {
     private float reflectance;
     private Texture texture;
     private boolean unlit;
+    private boolean disableSpecular;
 
     public Material() {
         this.ambientColor = DEFAULT_COLOR;
@@ -19,10 +20,16 @@ public class Material {
         this.specularColor = DEFAULT_COLOR;
         this.reflectance = 0;
         this.unlit = false;
+        this.disableSpecular = false;
     }
 
     public Material(Vector4f color, float reflectance) {
         this(color, color, color, reflectance);
+    }
+
+    public Material(Texture texture, float reflectance) {
+        this(DEFAULT_COLOR,DEFAULT_COLOR, DEFAULT_COLOR, reflectance);
+        this.attachTexture(texture);
     }
 
     public Material(Vector4f color, float reflectance, boolean unlit) {
@@ -93,5 +100,13 @@ public class Material {
 
     public void setUnlit(boolean unlit) {
         this.unlit = unlit;
+    }
+
+    public boolean isDisableSpecular() {
+        return disableSpecular;
+    }
+
+    public void setDisableSpecular(boolean disableSpecular) {
+        this.disableSpecular = disableSpecular;
     }
 }

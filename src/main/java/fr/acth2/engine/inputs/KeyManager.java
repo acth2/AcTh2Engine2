@@ -38,6 +38,7 @@ public class KeyManager {
         checkKey(GLFW_KEY_ESCAPE);
         checkKey(GLFW_KEY_TAB);
         checkKey(GLFW_KEY_LEFT_CONTROL);
+
     }
 
     private static void checkKey(int keyCode) {

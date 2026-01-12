@@ -2,29 +2,16 @@ package fr.acth2.engine;
 
 import fr.acth2.engine.engine.Renderer;
 import fr.acth2.engine.engine.ShaderProgram;
-import fr.acth2.engine.engine.Texture;
 import fr.acth2.engine.engine.camera.Camera;
-import fr.acth2.engine.engine.light.DirectionalLight;
-import fr.acth2.engine.engine.light.PointLight;
-import fr.acth2.engine.engine.light.SpotLight;
-import fr.acth2.engine.engine.models.items.Item;
-import fr.acth2.engine.engine.models.Material;
-import fr.acth2.engine.engine.models.Mesh;
 import fr.acth2.engine.inputs.KeyManager;
 import fr.acth2.engine.inputs.MouseInput;
+import fr.acth2.engine.scene.Scene;
 import fr.acth2.engine.utils.Time;
 import fr.acth2.engine.utils.hud.Hud;
 import fr.acth2.engine.utils.loader.Loader;
-import org.joml.Matrix4f;
 import org.joml.Vector2f;
-import org.joml.Vector3f;
-import org.joml.Vector4f;
 import org.lwjgl.glfw.GLFWErrorCallback;
 import org.lwjgl.opengl.GL;
-
-import javax.swing.*;
-import java.util.ArrayList;
-import java.util.List;
 
 import static fr.acth2.engine.utils.Refs.*;
 import static org.lwjgl.glfw.GLFW.*;
@@ -36,23 +23,14 @@ public class Main implements Runnable {
     public Camera camera;
     public MouseInput mouseInput;
 
-    private static final float FOV = PROJECTION_FOV;
-    private static final float Z_NEAR = PROJECTION_Z_NEAR;
-    private static final float Z_FAR = PROJECTION_Z_FAR;
-    private Matrix4f projectionMatrix;
-
     private static Thread loopThread;
     private static Main main;
     private static Renderer renderer;
     public ShaderProgram shaderProgram;
     public ShaderProgram hudShaderProgram;
-    private Item[] items;
-    private Vector3f ambientLight;
-    private PointLight[] pointLights;
-    private SpotLight[] spotLights;
-    private DirectionalLight directionalLight;
-    private Item spotLightItem;
+    public ShaderProgram skyboxShaderProgram;
     public Hud hud;
+    private Scene scene;
 
 
     public Main() {
@@ -69,7 +47,7 @@ public class Main implements Runnable {
         main = instance;
     }
 
-    public static void main(String[] args) throws UnsupportedLookAndFeelException {
+    public static void main(String[] args) {
         Main.setInstance(new Main());
         Main.getInstance().start();
     }
@@ -120,46 +98,21 @@ public class Main implements Runnable {
         hudShaderProgram.createFragmentShader(Loader.loadResource("/shaders/hud_fragment.glsl"));
         hudShaderProgram.link();
 
-        renderer.init(shaderProgram, hudShaderProgram);
+        skyboxShaderProgram = new ShaderProgram();
+        skyboxShaderProgram.createVertexShader(Loader.loadResource("/shaders/skybox_vertex.glsl"));
+        skyboxShaderProgram.createFragmentShader(Loader.loadResource("/shaders/skybox_fragment.glsl"));
+        skyboxShaderProgram.link();
 
-        List<Item> allItems = new ArrayList<>();
+        renderer.init(shaderProgram, hudShaderProgram, skyboxShaderProgram);
 
-        float reflectance = 1f;
-        Mesh cubeMesh = Loader.loadMesh("/models/cuboid.obj");
-        Material cubeMaterial = new Material(new Vector4f(1.0f, 1.0f, 1.0f, 1.0f), reflectance);
-        cubeMesh.setMaterial(cubeMaterial);
-        cubeMesh.attachTexture(new Texture("/textures/v2.png"));
-
-        for (int i = -1; i <= 1; i++) {
-            for (int j = -1; j <= 1; j++) {
-                Item cubeItem = new Item(cubeMesh);
-                cubeItem.setPosition(i * 2, 0, j * 2 - 2);
-                allItems.add(cubeItem);
-            }
-        }
-
-        ambientLight = new Vector3f(0.1f, 0.1f, 0.1f);
-
-        pointLights = new PointLight[0];
-
-        spotLights = new SpotLight[1];
-        Mesh spotLightMesh = Loader.loadMesh("/models/light.obj");
-        Material spotLightMaterial = new Material(new Vector4f(1f, 1f, 1f, 1.0f), 0f, true);
-        spotLightMesh.setMaterial(spotLightMaterial);
-        spotLightItem = new Item(spotLightMesh);
-        spotLightItem.setScale(1f);
-        allItems.add(spotLightItem);
-        PointLight spotPointLight = new PointLight(new Vector3f(1,1,1), new Vector3f(0,5,0), 1.0f);
-        spotLights[0] = new SpotLight(spotPointLight, new Vector3f(0,-1,0), (float)Math.cos(Math.toRadians(30)));
-
-        directionalLight = new DirectionalLight(new Vector3f(0,0,0), new Vector3f(0,0,0), 0);
-
-        items = allItems.toArray(new Item[0]);
+        scene = new Scene();
+        scene.init();
 
         System.out.println("GLFW Window ID: " + this.id + "\n");
 
         System.out.println("Controls: ");
         System.out.println(" - X = STOP TIME");
+        System.out.println(" - M = ROTATE SKYBOX");
         System.out.println(" - TAB        = FOCUS AND TAKE CAMERA");
         System.out.println(" - CONTROLS   = BOOST");
         System.out.println(" - SHIFT      = HEAD DOWN");
@@ -183,6 +136,8 @@ public class Main implements Runnable {
 
             frames++;
 
+            System.out.println(Main.getInstance().camera.getPosition().toString());
+            System.out.println(Main.getInstance().camera.getRotation().toString());
             double now = getTime();
             if (now - lastFpsTime >= 1000) {
                 glfwSetWindowTitle(instance.id, WINDOW_TITLE + " | FPS: " + frames);
@@ -197,27 +152,13 @@ public class Main implements Runnable {
         loopThread.start();
     }
 
-    float temp = 0.0F;
-    long lastTime = System.currentTimeMillis();
-
     public void render() {
         renderer.clear();
-
-        long currentTime = System.currentTimeMillis();
-        float deltaTime = (currentTime - lastTime) / 1000.0f;
-        lastTime = currentTime;
-
-        if (!Time.isTimeStopped()) {
-            temp += deltaTime;
-        }
-
         hud.update();
+        scene.update();
 
-        float spotLightY = (float) (3.0f + (Math.sin(temp) * 2.0f));
-        spotLights[0].getPointLight().setPosition(new Vector3f(0, spotLightY, 0));
-        spotLightItem.setPosition(0, spotLightY, 0);
-
-        renderer.render(this.id, this.camera, this.shaderProgram, items, ambientLight, pointLights, spotLights, directionalLight);
+        renderer.render(this.id, this.camera, this.shaderProgram, scene);
+        renderer.renderSkyBox(this.id, this.camera, this.skyboxShaderProgram, scene);
         renderer.renderHud(this.id, this.hudShaderProgram, hud);
 
         glfwSwapBuffers(this.id);
@@ -291,12 +232,13 @@ public class Main implements Runnable {
         if (hudShaderProgram != null) {
             hudShaderProgram.cleanup();
         }
+        if (skyboxShaderProgram != null) {
+            skyboxShaderProgram.cleanup();
+        }
         if (hud != null) {
             hud.cleanUp();
         }
-        for (Item item : items) {
-            item.getMesh().cleanUp();
-        }
+        scene.cleanUp();
     }
 
     @Override

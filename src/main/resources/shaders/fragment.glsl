@@ -46,6 +46,7 @@ struct Material
     int hasTexture;
     float reflectance;
     int unlit;
+    int disableSpecular;
 };
 
 uniform sampler2D texture_sampler;
@@ -66,13 +67,15 @@ vec4 calcLightColor(vec3 light_color, float light_intensity, vec3 position, vec3
     float diffuseFactor = max(dot(normal, to_light_dir), 0.0);
     diffuseColor = material.diffuse * vec4(light_color, 1.0) * light_intensity * diffuseFactor;
 
-    vec3 view_direction = normalize(-position);
-    vec3 halfway_direction = normalize(to_light_dir + view_direction);
-    float spec_angle = max(dot(normal, halfway_direction), 0.0);
-    float specularFactor = pow(spec_angle, specularPower);
+    if (material.disableSpecular == 0) {
+        vec3 view_direction = normalize(-position);
+        vec3 halfway_direction = normalize(to_light_dir + view_direction);
+        float spec_angle = max(dot(normal, halfway_direction), 0.0);
+        float specularFactor = pow(spec_angle, specularPower);
 
-    if (material.reflectance > 0) {
-        specColor = material.specular * vec4(light_color, 1.0) * light_intensity * specularFactor * material.reflectance;
+        if (material.reflectance > 0) {
+            specColor = material.specular * vec4(light_color, 1.0) * light_intensity * specularFactor * material.reflectance;
+        }
     }
 
     return (diffuseColor + specColor);
@@ -117,6 +120,11 @@ void main()
         } else {
             fragColor = material.colour;
         }
+        return;
+    }
+
+    if (material.disableSpecular == 1) {
+        fragColor = vec4(ambientLight, 1) * texture(texture_sampler, outTexCoord);
         return;
     }
 

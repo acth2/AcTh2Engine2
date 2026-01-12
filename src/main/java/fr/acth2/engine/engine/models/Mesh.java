@@ -20,7 +20,7 @@ public class Mesh {
     private final int vaoId;
     private final int posVboId;
     private int texVboId;
-    private final int normalsVboId;
+    private int normalsVboId;
     private final int idxVboId;
     private final int vertexCount;
     private Material material;
@@ -53,12 +53,14 @@ public class Mesh {
                 glVertexAttribPointer(1, 2, GL_FLOAT, false, 0, 0);
             }
 
-            normalsVboId = glGenBuffers();
-            normalsBuffer = memAllocFloat(normals.length);
-            normalsBuffer.put(normals).flip();
-            glBindBuffer(GL_ARRAY_BUFFER, normalsVboId);
-            glBufferData(GL_ARRAY_BUFFER, normalsBuffer, GL_STATIC_DRAW);
-            glVertexAttribPointer(2, 3, GL_FLOAT, false, 0, 0);
+            if (normals != null && normals.length > 0) {
+                normalsVboId = glGenBuffers();
+                normalsBuffer = memAllocFloat(normals.length);
+                normalsBuffer.put(normals).flip();
+                glBindBuffer(GL_ARRAY_BUFFER, normalsVboId);
+                glBufferData(GL_ARRAY_BUFFER, normalsBuffer, GL_STATIC_DRAW);
+                glVertexAttribPointer(2, 3, GL_FLOAT, false, 0, 0);
+            }
 
             idxVboId = glGenBuffers();
             indicesBuffer = memAllocInt(indices.length);
@@ -91,18 +93,22 @@ public class Mesh {
 
         glBindVertexArray(vaoId);
         glEnableVertexAttribArray(0);
-        if (material != null && material.isTextured()) {
+        if (texVboId > 0) {
             glEnableVertexAttribArray(1);
         }
-        glEnableVertexAttribArray(2);
+        if (normalsVboId > 0) {
+            glEnableVertexAttribArray(2);
+        }
 
         glDrawElements(GL_TRIANGLES, vertexCount, GL_UNSIGNED_INT, 0);
 
         glDisableVertexAttribArray(0);
-        if (material != null && material.isTextured()) {
+        if (texVboId > 0) {
             glDisableVertexAttribArray(1);
         }
-        glDisableVertexAttribArray(2);
+        if (normalsVboId > 0) {
+            glDisableVertexAttribArray(2);
+        }
         glBindVertexArray(0);
         glBindTexture(GL_TEXTURE_2D, 0);
     }
@@ -114,10 +120,12 @@ public class Mesh {
 
         glBindBuffer(GL_ARRAY_BUFFER, 0);
         glDeleteBuffers(posVboId);
-        if (material != null && material.isTextured()) {
+        if (texVboId > 0) {
             glDeleteBuffers(texVboId);
         }
-        glDeleteBuffers(normalsVboId);
+        if (normalsVboId > 0) {
+            glDeleteBuffers(normalsVboId);
+        }
         glDeleteBuffers(idxVboId);
 
         glBindVertexArray(0);

@@ -1,7 +1,7 @@
 package fr.acth2.engine.utils.hud;
 
-import fr.acth2.engine.engine.models.items.Item;
-import fr.acth2.engine.engine.models.items.TextItem;
+import fr.acth2.engine.engine.items.Item;
+import fr.acth2.engine.engine.items.TextItem;
 import org.joml.Vector4f;
 import org.lwjgl.system.MemoryStack;
 

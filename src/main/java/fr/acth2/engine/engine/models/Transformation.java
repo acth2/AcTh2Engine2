@@ -1,7 +1,7 @@
 package fr.acth2.engine.engine.models;
 
 import fr.acth2.engine.engine.camera.Camera;
-import fr.acth2.engine.engine.models.items.Item;
+import fr.acth2.engine.engine.items.Item;
 import org.joml.Matrix4f;
 import org.joml.Vector3f;
 

@@ -1,4 +1,4 @@
-package fr.acth2.engine.engine.models.items;
+package fr.acth2.engine.engine.items;
 
 import fr.acth2.engine.engine.models.Mesh;
 import org.joml.Vector3f;

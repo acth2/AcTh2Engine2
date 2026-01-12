@@ -1,6 +1,6 @@
 package fr.acth2.engine.utils.hud;
 
-import fr.acth2.engine.engine.models.items.Item;
+import fr.acth2.engine.engine.items.Item;
 
 public interface IHud {
 
