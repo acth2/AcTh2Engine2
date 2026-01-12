@@ -17,6 +17,15 @@ public class TextItem extends Item {
 
     private String text;
     private Font font;
+    private int height;
+
+    public TextItem(String text) {
+        this(text, new Font("Arial", Font.PLAIN, 20));
+    }
+
+    public TextItem(String text, String fontName, int style, int size) {
+        this(text, new Font(fontName, style, size));
+    }
 
     public TextItem(String text, Font font) {
         super();
@@ -31,16 +40,13 @@ public class TextItem extends Item {
         g2d.setFont(font);
         FontMetrics fm = g2d.getFontMetrics();
         int width = fm.stringWidth(text) + 5;
-        int height = fm.getHeight();
+        this.height = fm.getHeight();
         g2d.dispose();
 
         BufferedImage image = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
         g2d = image.createGraphics();
-        g2d.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
+        g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
         g2d.setRenderingHint(RenderingHints.KEY_FRACTIONALMETRICS, RenderingHints.VALUE_FRACTIONALMETRICS_ON);
-        
-        g2d.setColor(Color.BLACK);
-        g2d.fillRect(0, 0, width, height);
         
         g2d.setFont(font);
         g2d.setColor(Color.WHITE);
@@ -68,9 +74,9 @@ public class TextItem extends Item {
 
         float[] positions = new float[]{
                 0, 0, 0,
-                0, height, 0,
-                width, height, 0,
-                width, 0, 0
+                0, (float)height, 0,
+                (float)width, (float)height, 0,
+                (float)width, 0, 0
         };
         float[] texCoords = new float[]{
                 0, 0,
@@ -88,6 +94,10 @@ public class TextItem extends Item {
 
     public String getText() {
         return text;
+    }
+    
+    public int getHeight() {
+        return height;
     }
 
     public void setText(String text) {

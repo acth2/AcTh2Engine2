@@ -39,6 +39,10 @@ public class KeyManager {
         checkKey(GLFW_KEY_TAB);
         checkKey(GLFW_KEY_LEFT_CONTROL);
 
+        checkKey(GLFW_KEY_T);
+        checkKey(GLFW_KEY_E);
+        checkKey(GLFW_KEY_B);
+        checkKey(GLFW_KEY_I);
     }
 
     private static void checkKey(int keyCode) {

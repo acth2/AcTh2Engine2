@@ -37,8 +37,11 @@ public class Hud implements IHud {
     }
 
     public void showInformation(String text, int duration) {
-        Font font = new Font("Arial", Font.PLAIN, 20);
-        TextItem textItem = new TextItem(text, font);
+        showInformation(text, duration, Font.PLAIN, 20);
+    }
+
+    public void showInformation(String text, int duration, int style, int size) {
+        TextItem textItem = new TextItem(text, "Arial", style, size);
         textItem.getMesh().getMaterial().setColour(new Vector4f(1, 1, 1, 1));
         long deathTime = System.currentTimeMillis() + duration;
         temporaryTexts.add(new TemporaryText(textItem, deathTime));
@@ -46,8 +49,11 @@ public class Hud implements IHud {
     }
 
     public void showError(String text, int duration) {
-        Font font = new Font("Arial", Font.PLAIN, 20);
-        TextItem textItem = new TextItem(text, font);
+        showError(text, duration, Font.PLAIN, 20);
+    }
+
+    public void showError(String text, int duration, int style, int size) {
+        TextItem textItem = new TextItem(text, "Arial", style, size);
         textItem.getMesh().getMaterial().setColour(new Vector4f(1, 0, 0, 1));
         long deathTime = System.currentTimeMillis() + duration;
         temporaryTexts.add(new TemporaryText(textItem, deathTime));
@@ -55,10 +61,13 @@ public class Hud implements IHud {
     }
 
     public void setPersistentText(String key, String text) {
+        setPersistentText(key, text, Font.PLAIN, 20);
+    }
+
+    public void setPersistentText(String key, String text, int style, int size) {
         TextItem textItem = persistentTexts.get(key);
         if (textItem == null) {
-            Font font = new Font("Arial", Font.PLAIN, 20);
-            textItem = new TextItem(text, font);
+            textItem = new TextItem(text, "Arial", style, size);
             textItem.getMesh().getMaterial().setColour(new Vector4f(1, 1, 1, 1));
             persistentTexts.put(key, textItem);
         } else {
@@ -125,14 +134,14 @@ public class Hud implements IHud {
             IntBuffer height = stack.mallocInt(1);
             glfwGetWindowSize(windowId, width, height);
 
-            int i = 0;
+            float y = 10f;
             for (TemporaryText tempText : temporaryTexts) {
-                tempText.textItem.setPosition(10f, height.get(0) - 50f - (i * 20f), 0);
-                i++;
+                tempText.textItem.setPosition(10f, y, 0);
+                y += tempText.textItem.getHeight() + 5;
             }
             for (TextItem textItem : persistentTexts.values()) {
-                textItem.setPosition(10f, 10f + (i * 20f), 0);
-                i++;
+                textItem.setPosition(10f, y, 0);
+                y += textItem.getHeight() + 5;
             }
         }
     }

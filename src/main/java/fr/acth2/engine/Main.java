@@ -13,6 +13,8 @@ import org.joml.Vector2f;
 import org.lwjgl.glfw.GLFWErrorCallback;
 import org.lwjgl.opengl.GL;
 
+import java.awt.Font;
+
 import static fr.acth2.engine.utils.Refs.*;
 import static org.lwjgl.glfw.GLFW.*;
 import static org.lwjgl.opengl.GL11.*;
@@ -112,7 +114,10 @@ public class Main implements Runnable {
 
         System.out.println("Controls: ");
         System.out.println(" - X = STOP TIME");
-        System.out.println(" - M = ROTATE SKYBOX");
+        System.out.println(" - T = SHOW TEXT");
+        System.out.println(" - E = SHOW ERROR");
+        System.out.println(" - B = SHOW BOLD TEXT");
+        System.out.println(" - I = SHOW ITALIC TEXT");
         System.out.println(" - TAB        = FOCUS AND TAKE CAMERA");
         System.out.println(" - CONTROLS   = BOOST");
         System.out.println(" - SHIFT      = HEAD DOWN");
@@ -136,8 +141,6 @@ public class Main implements Runnable {
 
             frames++;
 
-            System.out.println(Main.getInstance().camera.getPosition().toString());
-            System.out.println(Main.getInstance().camera.getRotation().toString());
             double now = getTime();
             if (now - lastFpsTime >= 1000) {
                 glfwSetWindowTitle(instance.id, WINDOW_TITLE + " | FPS: " + frames);
@@ -172,6 +175,22 @@ public class Main implements Runnable {
         if (KeyManager.getKeyJustPressed(GLFW_KEY_X)) {
             Time.stopTime();
             hud.showInformation("TIME ALTERED", 1000);
+        }
+
+        if (KeyManager.getKeyJustPressed(GLFW_KEY_T)) {
+            hud.showInformation("Normal Text", 2000);
+        }
+        
+        if (KeyManager.getKeyJustPressed(GLFW_KEY_E)) {
+            hud.showError("Error Text", 2000);
+        }
+
+        if (KeyManager.getKeyJustPressed(GLFW_KEY_B)) {
+            hud.showInformation("Bold Text", 2000, Font.BOLD, 24);
+        }
+
+        if (KeyManager.getKeyJustPressed(GLFW_KEY_I)) {
+            hud.showInformation("Italic Text", 2000, Font.ITALIC, 18);
         }
 
         float speed = 0.05f;

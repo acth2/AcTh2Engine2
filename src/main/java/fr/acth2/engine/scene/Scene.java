@@ -50,31 +50,13 @@ public class Scene {
         sceneLight.setAmbientLight(new Vector3f(0.1f, 0.1f, 0.1f));
         sceneLight.setPointLights(new PointLight[0]);
 
-        SpotLight[] spotLights = new SpotLight[1];
-        //Mesh spotLightMesh = Loader.loadMesh("/models/light.obj");
-        Material spotLightMaterial = new Material(new Vector4f(1f, 1f, 1f, 1.0f), 0f, true);
-        //spotLightMesh.setMaterial(spotLightMaterial);
-        //spotLightItem = new Item(spotLightMesh);
-        //spotLightItem.setScale(1f);
-        //gameItems.add(spotLightItem);
-        PointLight spotPointLight = new PointLight(new Vector3f(1,1,1), new Vector3f(0,5,0), 1.0f);
-        spotLights[0] = new SpotLight(spotPointLight, new Vector3f(0,-1,0), (float)Math.cos(Math.toRadians(30)));
-        //sceneLight.setSpotLights(spotLights);
+        SpotLight[] spotLights = new SpotLight[0];
+        sceneLight.setSpotLights(spotLights);
 
         Vector3f sunPosition = new Vector3f(1911, 1274, 1046);
-        Vector3f sunRotation = new Vector3f(25, 309, 0);
         Vector3f lightDirection = new Vector3f(sunPosition).normalize().negate();
 
         sceneLight.setDirectionalLight(new DirectionalLight(new Vector3f(1,1,1), lightDirection, 1.0f));
-
-        //Mesh sunMesh = Loader.loadMesh("/models/sun.obj");
-        Material sunMaterial = new Material(new Vector4f(1f, 1f, 1f, 1.0f), 0f, true);
-        //sunMesh.setMaterial(sunMaterial);
-        //Item sunItem = new Item(sunMesh);
-        //sunItem.setPosition(sunPosition.x, sunPosition.y, sunPosition.z);
-        //sunItem.setRotation(sunRotation.x, sunRotation.y, sunRotation.z);
-        //sunItem.setScale(100f);
-        //gameItems.add(sunItem);
 
         String[] textureFiles = new String[] {
             "/textures/skybox/hills_rt.png",
@@ -88,7 +70,7 @@ public class Scene {
     }
 
     public void update() {
-        // Animations are currently disabled
+        // disabled
     }
     
     public void cleanUp() {
