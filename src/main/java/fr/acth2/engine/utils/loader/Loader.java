@@ -157,14 +157,14 @@ public class Loader {
         }
 
         return new Mesh(
-                toFloatArray(posArr),
-                toFloatArray(texArr),
-                toFloatArray(normArr),
+                listToArray(posArr),
+                listToArray(texArr),
+                listToArray(normArr),
                 indices.stream().mapToInt(i -> i).toArray()
         );
     }
 
-    private static float[] toFloatArray(List<Float> list) {
+    public static float[] listToArray(List<Float> list) {
         float[] arr = new float[list.size()];
         for (int i = 0; i < list.size(); i++) {
             arr[i] = list.get(i);

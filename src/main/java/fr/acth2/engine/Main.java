@@ -110,6 +110,8 @@ public class Main implements Runnable {
         scene = new Scene();
         scene.init();
 
+        camera.setPosition(0, 15, 0);
+
         System.out.println("GLFW Window ID: " + this.id + "\n");
 
         System.out.println("Controls: ");
@@ -161,7 +163,6 @@ public class Main implements Runnable {
         scene.update();
 
         renderer.render(this.id, this.camera, this.shaderProgram, scene);
-        renderer.renderSkyBox(this.id, this.camera, this.skyboxShaderProgram, scene);
         renderer.renderHud(this.id, this.hudShaderProgram, hud);
 
         glfwSwapBuffers(this.id);
@@ -196,7 +197,7 @@ public class Main implements Runnable {
         float speed = 0.05f;
 
         if (KeyManager.getKeyJustPressed(GLFW_KEY_LEFT_CONTROL)) {
-            speed = 15f;
+            speed = 5f;
         }
 
         if (KeyManager.getKeyPress(GLFW_KEY_W)) {

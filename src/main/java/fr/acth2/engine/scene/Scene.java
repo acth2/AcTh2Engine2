@@ -7,6 +7,7 @@ import fr.acth2.engine.engine.light.PointLight;
 import fr.acth2.engine.engine.light.SpotLight;
 import fr.acth2.engine.engine.models.Material;
 import fr.acth2.engine.engine.models.Mesh;
+import fr.acth2.engine.engine.models.heightmap.Terrain;
 import fr.acth2.engine.engine.models.skybox.SkyBox;
 import fr.acth2.engine.utils.Time;
 import fr.acth2.engine.utils.loader.Loader;
@@ -14,6 +15,7 @@ import org.joml.Vector3f;
 import org.joml.Vector4f;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 public class Scene {
@@ -21,56 +23,34 @@ public class Scene {
     private List<Item> gameItems;
     private SkyBox skyBox;
     private SceneLight sceneLight;
-    private Item spotLightItem;
-    private float temp = 0.0F;
-    private long lastTime = System.currentTimeMillis();
-    private Vector3f skyBoxRotation;
+    private Terrain terrain;
+    private Item sun;
 
     public Scene() {
         gameItems = new ArrayList<>();
-        skyBoxRotation = new Vector3f(0,0,0);
     }
 
     public void init() throws Exception {
-        float reflectance = 1f;
-        Mesh cubeMesh = Loader.loadMesh("/models/cuboid.obj");
-        Material cubeMaterial = new Material(new Vector4f(1.0f, 1.0f, 1.0f, 1.0f), reflectance);
-        cubeMesh.setMaterial(cubeMaterial);
-        cubeMesh.attachTexture(new Texture("/textures/v2.png"));
-
-        for (int i = -1; i <= 1; i++) {
-            for (int j = -1; j <= 1; j++) {
-                Item cubeItem = new Item(cubeMesh);
-                cubeItem.setPosition(i * 2, 0, j * 2 - 2);
-                gameItems.add(cubeItem);
-            }
-        }
-
         sceneLight = new SceneLight();
-        sceneLight.setAmbientLight(new Vector3f(0.1f, 0.1f, 0.1f));
+        sceneLight.setAmbientLight(new Vector3f(0.8f, 0.8f, 0.8f));
         sceneLight.setPointLights(new PointLight[0]);
+        sceneLight.setSpotLights(new SpotLight[0]);
+        sceneLight.setDirectionalLight(new DirectionalLight(new Vector3f(1,1,1), new Vector3f(-1, -1, -1), 0.8f));
 
-        SpotLight[] spotLights = new SpotLight[0];
-        sceneLight.setSpotLights(spotLights);
+        terrain = new Terrain(2, 32, 0.0F, 0.25F, "/textures/heightmap.png", "/textures/v2.png", 16);
+        gameItems.addAll(Arrays.asList(terrain.getGameItems()));
 
-        Vector3f sunPosition = new Vector3f(1911, 1274, 1046);
-        Vector3f lightDirection = new Vector3f(sunPosition).normalize().negate();
-
-        sceneLight.setDirectionalLight(new DirectionalLight(new Vector3f(1,1,1), lightDirection, 1.0f));
-
-        String[] textureFiles = new String[] {
-            "/textures/skybox/hills_rt.png",
-            "/textures/skybox/hills_lf.png",
-            "/textures/skybox/hills_up.png",
-            "/textures/skybox/hills_dn.png",
-            "/textures/skybox/hills_bk.png",
-            "/textures/skybox/hills_ft.png"
-        };
-        skyBox = new SkyBox(textureFiles);
+        Mesh sunMesh = Loader.loadMesh("/models/light.obj");
+        Material sunMaterial = new Material(new Vector4f(1f, 1f, 1f, 1.0f), 0f, true);
+        sunMesh.setMaterial(sunMaterial);
+        sun = new Item(sunMesh);
+        sun.setScale(10f);
+        gameItems.add(sun);
     }
 
     public void update() {
-        // disabled
+        Vector3f lightDirection = new Vector3f(sceneLight.getDirectionalLight().getPosition()).normalize().negate();
+        sun.setPosition(lightDirection.x * 100, lightDirection.y * 100, lightDirection.z * 100);
     }
     
     public void cleanUp() {
@@ -101,15 +81,5 @@ public class Scene {
 
     public void setSceneLight(SceneLight sceneLight) {
         this.sceneLight = sceneLight;
-    }
-
-    public Vector3f getSkyBoxRotation() {
-        return skyBoxRotation;
-    }
-
-    public void rotateSkyBox(float x, float y, float z) {
-        this.skyBoxRotation.x += x;
-        this.skyBoxRotation.y += y;
-        this.skyBoxRotation.z += z;
     }
 }
